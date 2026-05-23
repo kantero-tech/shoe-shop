@@ -3,25 +3,220 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core colors */
+  --color-bg: #F2F2F7;
+  --color-surface: #FFFFFF;
+  --color-label: #1C1C1E;
+  --color-label-secondary: #8E8E93;
+  --color-label-tertiary: #C7C7CC;
+  --color-separator: #C6C6C8;
+
+  /* iOS accent colors */
+  --color-blue: #007AFF;
+  --color-blue-light: #E3F0FF;
+  --color-green: #34C759;
+  --color-green-light: #E3F9EA;
+  --color-red: #FF3B30;
+  --color-red-light: #FFE9E8;
+  --color-orange: #FF9500;
+  --color-orange-light: #FFF4E3;
+  --color-purple: #AF52DE;
+  --color-purple-light: #F4E8FF;
+
+  /* Fill colors */
+  --color-fill: #F2F2F7;
+  --color-fill-secondary: #E5E5EA;
+  --color-fill-tertiary: #D1D1D6;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-nav: 0 -1px 0 rgba(0, 0, 0, 0.06);
+
+  /* Border radii */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Typography */
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", "Helvetica", "Arial", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Base reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-system);
+  background-color: var(--color-bg);
+  color: var(--color-label);
+  font-size: 17px;
+  line-height: 1.47;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbars iOS-style */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remove tap highlight on mobile */
+a,
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+/* iOS-style smooth momentum scrolling */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Typography scale */
+.text-large-title {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.37px;
+  line-height: 1.21;
+}
+
+.text-title-1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.36px;
+  line-height: 1.21;
+}
+
+.text-title-2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  line-height: 1.27;
+}
+
+.text-title-3 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.38px;
+  line-height: 1.25;
+}
+
+.text-headline {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.41px;
+  line-height: 1.29;
+}
+
+.text-body {
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.41px;
+  line-height: 1.29;
+}
+
+.text-callout {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.32px;
+  line-height: 1.31;
+}
+
+.text-subheadline {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.24px;
+  line-height: 1.33;
+}
+
+.text-footnote {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: -0.08px;
+  line-height: 1.38;
+}
+
+.text-caption {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0px;
+  line-height: 1.33;
+}
+
+/* Utility: secondary text color */
+.text-secondary {
+  color: var(--color-label-secondary);
+}
+
+/* Spring-like transition for interactive elements */
+.transition-spring {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.transition-smooth {
+  transition: all 0.2s ease;
+}
+
+/* Bottom nav safe area */
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* Page with bottom nav spacing */
+.page-content {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+
+  .bg-fill {
+    background-color: var(--color-fill);
   }
 }
