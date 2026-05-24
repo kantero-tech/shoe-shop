@@ -51,7 +51,7 @@ function Skeleton({ className }: { className?: string }) {
 function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3">
-      {Array.from({ length: 4 }).map((_, i) => (
+      {Array.from({ length: 6 }).map((_, i) => (
         <Skeleton key={i} className="h-24" />
       ))}
     </div>
@@ -60,37 +60,131 @@ function StatsSkeleton() {
 
 function SaleRowSkeleton() {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <div className="flex flex-col gap-2 flex-1 mr-4">
-        <Skeleton className="h-3.5 w-32 rounded-md" />
-        <Skeleton className="h-3 w-24 rounded-md" />
+    <div className="flex flex-col gap-2 px-4 py-3.5">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 flex-1 mr-4">
+          <Skeleton className="h-3.5 w-32 rounded-md" />
+          <Skeleton className="h-3 w-24 rounded-md" />
+        </div>
+        <Skeleton className="h-4 w-20 rounded-md" />
       </div>
-      <Skeleton className="h-4 w-20 rounded-md" />
     </div>
   )
 }
 
-const SaleRow = /*#__PURE__*/ React.memo(function SaleRow({ sale, isLast }: { sale: Sale; isLast: boolean }) {
-  const debt = (sale.totalAmount ?? 0) - (sale.amountPaid ?? 0)
-  return (
-    <div
-      className={cn(
-        'flex items-center justify-between px-4 py-3',
-        !isLast && 'border-b border-ios-separator/10'
-      )}
-    >
-      <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-3">
-        <p className="text-[15px] font-semibold text-ios-label truncate">
-          {[sale.brand, sale.color].filter(Boolean).join(' · ')}
-        </p>
-        <p className="text-[13px] text-ios-label-secondary">
-          {sale.paymentMethod ?? 'Cash'} · {formatDateShort(sale.date)}
-        </p>
-      </div>
+const SaleRow = /*#__PURE__*/ React.memo(function SaleRow({
+  sale,
+  isLast,
+  expanded,
+  onToggle,
+}: {
+  sale: Sale
+  isLast: boolean
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const owes = Math.max(0, (sale.totalAmount ?? 0) - (sale.amountPaid ?? 0))
 
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <p className="text-[15px] font-bold text-ios-label">{formatRWF(sale.totalAmount ?? 0)}</p>
-        {!sale.isPaid && debt > 0 && <Badge variant="red">Debt</Badge>}
+  return (
+    <div className={cn(!isLast && 'border-b border-ios-separator/10')}>
+      {/* Clickable Header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left active:bg-ios-fill-secondary/30 dark:active:bg-[#2C2C2E]/30 transition-colors"
+      >
+        <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-3">
+          <p className="text-[15px] font-semibold text-ios-label truncate">
+            {[sale.brand, sale.color].filter(Boolean).join(' · ')}
+            {sale.size && <span className="font-normal text-ios-label-secondary text-[13px]"> (Size {sale.size})</span>}
+          </p>
+          <p className="text-[13px] text-ios-label-secondary font-medium">
+            {sale.paymentMethod ?? 'Cash'} · {formatDateShort(sale.date)}
+          </p>
+        </div>
+
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <p className="text-[15px] font-bold text-ios-label tabular-nums">{formatRWF(sale.totalAmount ?? 0)}</p>
+          {!sale.isPaid && owes > 0 && <Badge variant="red">Debt</Badge>}
+        </div>
+      </button>
+
+      {/* Expandable Details Grid */}
+      <div
+        className="overflow-hidden"
+        style={{
+          display: 'grid',
+          gridTemplateRows: expanded ? '1fr' : '0fr',
+          transition: 'grid-template-rows 0.3s cubic-bezier(0.4,0,0.2,1)',
+        }}
+      >
+        <div className="min-h-0 bg-ios-fill/30 dark:bg-[#1E1E24]/60 px-4 pb-4 pt-1 border-t border-ios-separator/5 flex flex-col gap-2.5 text-[13px]">
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div>
+              <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Product</p>
+              <p className="text-ios-label font-semibold">
+                {[sale.brand, sale.color].filter(Boolean).join(' · ')} {sale.size ? `(Size ${sale.size})` : ''}
+              </p>
+            </div>
+            <div>
+              <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Quantity</p>
+              <p className="text-ios-label font-semibold">{sale.qty} pair(s)</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Unit Price / Cost</p>
+              <p className="text-ios-label font-semibold">
+                Sell: {formatRWF(sale.sellPrice ?? 0)} <span className="font-normal text-ios-label-secondary">/ Buy: {formatRWF(sale.buyPrice ?? 0)}</span>
+              </p>
+            </div>
+            <div>
+              <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Gross Profit</p>
+              <p className="text-ios-green font-bold">
+                {formatRWF((sale.totalAmount ?? 0) - (sale.buyPrice ?? 0) * (sale.qty ?? 0))}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Settlement</p>
+              <p className="text-ios-label font-semibold">
+                Paid: {formatRWF(sale.amountPaid ?? 0)} <span className="font-normal text-ios-label-secondary">({sale.paymentMethod})</span>
+              </p>
+            </div>
+            <div>
+              <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Debt Owed</p>
+              <p className={cn("font-bold", owes > 0 ? "text-ios-orange" : "text-ios-green")}>
+                {owes > 0 ? formatRWF(owes) : 'Fully Paid'}
+              </p>
+            </div>
+          </div>
+
+          {(sale.customerName || sale.customerPhone) && (
+            <div className="grid grid-cols-2 gap-2">
+              {sale.customerName && (
+                <div>
+                  <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Customer</p>
+                  <p className="text-ios-label font-semibold">{sale.customerName}</p>
+                </div>
+              )}
+              {sale.customerPhone && (
+                <div>
+                  <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Phone</p>
+                  <p className="text-ios-label font-semibold">{sale.customerPhone}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {sale.note && (
+            <div className="border-t border-ios-separator/10 pt-2 mt-1">
+              <p className="text-ios-label-secondary font-medium uppercase text-[10px] tracking-wider">Sales Note</p>
+              <p className="text-ios-label italic font-medium">&ldquo;{sale.note}&rdquo;</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -101,6 +195,7 @@ const SaleRow = /*#__PURE__*/ React.memo(function SaleRow({ sale, isLast }: { sa
 export default function DashboardPage() {
   const [period, setPeriod] = useState<Period>('This Month')
   const [chartMetric, setChartMetric] = useState<'revenue' | 'profit' | 'collected'>('revenue')
+  const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null)
 
   const { data, isLoading } = db.useQuery({ stockItems: {}, sales: {}, expenses: {} })
 
@@ -151,6 +246,12 @@ export default function DashboardPage() {
         0
       ),
     [sales]
+  )
+
+  // Total items sold in this period
+  const itemsSold = useMemo(
+    () => filteredSales.reduce((acc, s) => acc + (s.qty ?? 0), 0),
+    [filteredSales]
   )
 
   // ── stock values ──
@@ -247,6 +348,10 @@ export default function DashboardPage() {
     [sales]
   )
 
+  const toggleExpandSale = useCallback((id: string) => {
+    setExpandedSaleId((prev) => (prev === id ? null : id))
+  }, [])
+
   return (
     <div className="min-h-screen bg-ios-bg pb-36">
       {/* Header */}
@@ -309,6 +414,18 @@ export default function DashboardPage() {
               value={formatRWF(outstanding)}
               subLabel="All time"
               color="orange"
+            />
+            <StatCard
+              label="Shoes Sold"
+              value={`${itemsSold} pairs`}
+              color="blue"
+              subLabel={`${period}`}
+            />
+            <StatCard
+              label="Stock Left"
+              value={`${pairsLeft} pairs`}
+              color="orange"
+              subLabel="Total Active"
             />
           </div>
         )}
@@ -507,7 +624,7 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* Recent sales */}
+        {/* Recent sales with expandable details */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <p className="text-[22px] font-bold text-ios-label">Recent Sales</p>
@@ -531,7 +648,13 @@ export default function DashboardPage() {
           ) : (
             <Card padding="none">
               {recentSales.map((sale, idx) => (
-                <SaleRow key={sale.id} sale={sale} isLast={idx === recentSales.length - 1} />
+                <SaleRow
+                  key={sale.id}
+                  sale={sale}
+                  isLast={idx === recentSales.length - 1}
+                  expanded={expandedSaleId === sale.id}
+                  onToggle={() => toggleExpandSale(sale.id)}
+                />
               ))}
             </Card>
           )}
