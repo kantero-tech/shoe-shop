@@ -4,7 +4,11 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { Search, X, Trash2, Edit2, Share2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/db'
-import type { Sale, PaymentMethod } from '@/lib/schema'
+import type { Sale, PaymentMethod, StockItem } from '@/lib/schema'
+
+type SaleWithStockItem = Sale & {
+  stockItem?: StockItem[]
+}
 import { formatRWF, formatDateShort, cn } from '@/lib/utils'
 import { useIsEmployer, useSession } from '@/lib/permissions-context'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -40,7 +44,7 @@ const SaleRow = React.memo(function SaleRow({
   sale,
   onTap,
 }: {
-  sale: Sale
+  sale: SaleWithStockItem
   onTap: () => void
 }) {
   const debt = (sale.totalAmount ?? 0) - (sale.amountPaid ?? 0)
@@ -86,7 +90,7 @@ function EditSheet({
   sale,
   onClose,
 }: {
-  sale: Sale | null
+  sale: SaleWithStockItem | null
   onClose: () => void
 }) {
   const open = sale !== null
@@ -126,22 +130,48 @@ function EditSheet({
     if (!brand.trim()) { setError('Brand is required'); return }
     if (!sellPrice || parseFloat(sellPrice) <= 0) { setError('Sell price must be > 0'); return }
     if (!sale) return
+
+    const newQty = parseInt(qty) || 1
+    const originalQty = sale.qty ?? 1
+    const delta = newQty - originalQty
+    const linkedStockItem = sale.stockItem?.[0]
+
+    if (linkedStockItem) {
+      if (delta > linkedStockItem.qty) {
+        setError(`Only ${linkedStockItem.qty + originalQty} pairs available in stock (currently ${linkedStockItem.qty} left)`)
+        return
+      }
+    }
+
     setSaving(true)
     setError('')
     try {
-      await db.transact(db.tx.sales[sale.id].update({
-        brand: brand.trim(),
-        color: color.trim(),
-        size: size.trim(),
-        sellPrice: parseFloat(sellPrice),
-        qty: parseInt(qty) || 1,
-        totalAmount,
-        amountPaid: amountPaidNum,
-        isPaid,
-        paymentMethod,
-        customerName: customerName.trim(),
-        note: note.trim(),
-      }))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const txOps: any[] = [
+        db.tx.sales[sale.id].update({
+          brand: brand.trim(),
+          color: color.trim(),
+          size: size.trim(),
+          sellPrice: parseFloat(sellPrice),
+          qty: newQty,
+          totalAmount,
+          amountPaid: amountPaidNum,
+          isPaid,
+          paymentMethod,
+          customerName: customerName.trim(),
+          note: note.trim(),
+        })
+      ]
+
+      if (linkedStockItem) {
+        txOps.push(
+          db.tx.stockItems[linkedStockItem.id].update({
+            qty: Math.max(0, linkedStockItem.qty - delta),
+          })
+        )
+      }
+
+      await db.transact(txOps)
       onClose()
     } catch {
       setError('Failed to save changes')
@@ -170,10 +200,10 @@ function EditSheet({
         </div>
 
         <div className="px-5 pb-10 flex flex-col gap-3 overflow-y-auto max-h-[80vh]">
-          <Input label="Brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Nike…" />
+          <Input label="Brand" value={brand} disabled className="opacity-60 bg-ios-fill-secondary" />
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Black" />
-            <Input label="Size" value={size} onChange={(e) => setSize(e.target.value)} placeholder="42" />
+            <Input label="Color" value={color} disabled className="opacity-60 bg-ios-fill-secondary" />
+            <Input label="Size" value={size} disabled className="opacity-60 bg-ios-fill-secondary" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Sell Price" value={sellPrice} onChange={(e) => setSellPrice(e.target.value)} type="number" inputMode="numeric" helper="RWF" />
@@ -241,7 +271,7 @@ function DetailSheet({
   onDelete,
   onClose,
 }: {
-  sale: Sale | null
+  sale: SaleWithStockItem | null
   isEmployer: boolean
   onEdit: () => void
   onDelete: () => void
@@ -353,12 +383,12 @@ export default function SalesPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
   const [period, setPeriod] = useState<Period>('Month')
-  const [detailSale, setDetailSale] = useState<Sale | null>(null)
-  const [editSale, setEditSale] = useState<Sale | null>(null)
-  const [deleteSale, setDeleteSale] = useState<Sale | null>(null)
+  const [detailSale, setDetailSale] = useState<SaleWithStockItem | null>(null)
+  const [editSale, setEditSale] = useState<SaleWithStockItem | null>(null)
+  const [deleteSale, setDeleteSale] = useState<SaleWithStockItem | null>(null)
 
-  const { data, isLoading } = db.useQuery({ sales: {} })
-  const allSales = useMemo(() => (data?.sales ?? []) as Sale[], [data])
+  const { data, isLoading } = db.useQuery({ sales: { stockItem: {} } })
+  const allSales = useMemo(() => (data?.sales ?? []) as SaleWithStockItem[], [data])
 
   const filtered = useMemo(() => {
     const range = getPeriodRange(period)
@@ -385,7 +415,17 @@ export default function SalesPage() {
 
   async function handleDelete() {
     if (!deleteSale) return
-    await db.transact(db.tx.sales[deleteSale.id].delete())
+    const linkedStockItem = deleteSale.stockItem?.[0]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const txOps: any[] = [db.tx.sales[deleteSale.id].delete()]
+    if (linkedStockItem) {
+      txOps.push(
+        db.tx.stockItems[linkedStockItem.id].update({
+          qty: linkedStockItem.qty + (deleteSale.qty ?? 1),
+        })
+      )
+    }
+    await db.transact(txOps)
     setDeleteSale(null)
     setDetailSale(null)
   }

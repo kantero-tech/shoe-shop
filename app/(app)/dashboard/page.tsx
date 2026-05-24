@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { StatCard } from '@/components/ui/StatCard'
 import { Badge } from '@/components/ui/Badge'
+import { useSession, useIsEmployer } from '@/lib/permissions-context'
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -197,6 +198,13 @@ export default function DashboardPage() {
   const [chartMetric, setChartMetric] = useState<'revenue' | 'profit' | 'collected'>('revenue')
   const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null)
 
+  const session = useSession()
+  const isEmployer = useIsEmployer()
+
+  const canViewStock = isEmployer || (session?.canViewStock ?? true)
+  const canViewExpenses = isEmployer || (session?.canViewExpenses ?? true)
+  const canViewSales = isEmployer || (session?.canViewSales ?? true)
+
   const { data, isLoading } = db.useQuery({ stockItems: {}, sales: {}, expenses: {} })
 
   const sales = useMemo(() => (data?.sales ?? []) as Sale[], [data])
@@ -256,15 +264,15 @@ export default function DashboardPage() {
 
   // ── stock values ──
   const sellValue = useMemo(
-    () => stockItems.reduce((acc, s) => acc + s.sellPrice * s.qty, 0),
+    () => stockItems.reduce((acc, s) => acc + (Number(s.sellPrice) || 0) * (Number(s.qty) || 0), 0),
     [stockItems]
   )
   const costValue = useMemo(
-    () => stockItems.reduce((acc, s) => acc + s.buyPrice * s.qty, 0),
+    () => stockItems.reduce((acc, s) => acc + (Number(s.buyPrice) || 0) * (Number(s.qty) || 0), 0),
     [stockItems]
   )
   const pairsLeft = useMemo(
-    () => stockItems.reduce((acc, s) => acc + s.qty, 0),
+    () => stockItems.reduce((acc, s) => acc + (Number(s.qty) || 0), 0),
     [stockItems]
   )
 
@@ -384,133 +392,176 @@ export default function DashboardPage() {
           <StatsSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              label="Revenue"
-              value={formatRWF(revenue)}
-              color="green"
-              onClick={() => setChartMetric('revenue')}
-              active={chartMetric === 'revenue'}
-              className="cursor-pointer"
-            />
-            <StatCard
-              label="Net Profit"
-              value={formatRWF(netProfit)}
-              color={netProfit >= 0 ? 'green' : 'red'}
-              onClick={() => setChartMetric('profit')}
-              active={chartMetric === 'profit'}
-              className="cursor-pointer"
-              subLabel={`Exp: ${formatRWF(periodExpenses)}`}
-            />
-            <StatCard
-              label="Collected"
-              value={formatRWF(collected)}
-              color="blue"
-              onClick={() => setChartMetric('collected')}
-              active={chartMetric === 'collected'}
-              className="cursor-pointer"
-            />
-            <StatCard
-              label="Outstanding"
-              value={formatRWF(outstanding)}
-              subLabel="All time"
-              color="orange"
-            />
-            <StatCard
-              label="Shoes Sold"
-              value={`${itemsSold} pairs`}
-              color="blue"
-              subLabel={`${period}`}
-            />
-            <StatCard
-              label="Stock Left"
-              value={`${pairsLeft} pairs`}
-              color="orange"
-              subLabel="Total Active"
-            />
+            {canViewSales && (
+              <StatCard
+                label="Revenue"
+                value={formatRWF(revenue)}
+                color="green"
+                onClick={() => setChartMetric('revenue')}
+                active={chartMetric === 'revenue'}
+                className="cursor-pointer"
+              />
+            )}
+            {canViewExpenses && (
+              <StatCard
+                label="Net Profit"
+                value={formatRWF(netProfit)}
+                color={netProfit >= 0 ? 'green' : 'red'}
+                onClick={() => setChartMetric('profit')}
+                active={chartMetric === 'profit'}
+                className="cursor-pointer"
+                subLabel={`Exp: ${formatRWF(periodExpenses)}`}
+              />
+            )}
+            {canViewSales && (
+              <StatCard
+                label="Collected"
+                value={formatRWF(collected)}
+                color="blue"
+                onClick={() => setChartMetric('collected')}
+                active={chartMetric === 'collected'}
+                className="cursor-pointer"
+              />
+            )}
+            {canViewSales && (
+              <StatCard
+                label="Outstanding"
+                value={formatRWF(outstanding)}
+                subLabel="All time"
+                color="orange"
+              />
+            )}
+            {canViewSales && (
+              <StatCard
+                label="Shoes Sold"
+                value={`${itemsSold} pairs`}
+                color="blue"
+                subLabel={`${period}`}
+              />
+            )}
+            {canViewStock && (
+              <StatCard
+                label="Stock Left"
+                value={`${pairsLeft} pairs`}
+                color="orange"
+                subLabel="Total Active"
+              />
+            )}
+            {canViewStock && (
+              <StatCard
+                label="Stock Sell Value"
+                value={formatRWF(sellValue)}
+                color="green"
+                subLabel="At retail price"
+              />
+            )}
+            {canViewStock && (
+              <StatCard
+                label="Stock Cost Value"
+                value={formatRWF(costValue)}
+                color="orange"
+                subLabel="At wholesale cost"
+              />
+            )}
           </div>
         )}
 
-        {/* 7-day Area chart with smooth visual style */}
-        {isLoading ? (
-          <Skeleton className="h-36" />
-        ) : (
-          <Card>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[12px] font-semibold text-ios-label-secondary uppercase tracking-wider">
-                Last 7 Days ({chartMetric.toUpperCase()})
-              </p>
-              <div className="flex gap-2 text-[11px] font-semibold text-ios-label-secondary">
-                <button
-                  onClick={() => setChartMetric('revenue')}
-                  className={cn(chartMetric === 'revenue' && 'text-ios-green')}
-                >
-                  Revenue
-                </button>
-                <span>·</span>
-                <button
-                  onClick={() => setChartMetric('profit')}
-                  className={cn(chartMetric === 'profit' && 'text-ios-green')}
-                >
-                  Net Profit
-                </button>
-                <span>·</span>
-                <button
-                  onClick={() => setChartMetric('collected')}
-                  className={cn(chartMetric === 'collected' && 'text-ios-blue')}
-                >
-                  Collected
-                </button>
-              </div>
-            </div>
-            <div style={{ height: 140 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={chartData}
-                  margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={activeColor} stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor={activeColor} stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="label"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#8E8E93', fontWeight: 500 }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--color-surface)',
-                      borderColor: 'var(--color-separator)',
-                      borderRadius: '12px',
-                      boxShadow: 'var(--shadow-card)',
-                      color: 'var(--color-label)',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      borderWidth: '1px',
-                    }}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    formatter={(value: any) => [formatRWF(Number(value) || 0), chartMetric.toUpperCase()]}
-                    labelStyle={{ color: '#8E8E93', fontWeight: 'normal' }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey={chartMetric}
-                    stroke={activeColor}
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#colorMetric)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+        {/* Welcome Empty State if no permissions */}
+        {!canViewSales && !canViewStock && (
+          <Card className="text-center py-10">
+            <p className="text-[15px] font-medium text-ios-label-secondary">
+              Welcome to Mpenzi Shoes! Please contact your administrator for access.
+            </p>
           </Card>
         )}
 
+        {/* 7-day Area chart with smooth visual style */}
+        {canViewSales && (
+          isLoading ? (
+            <Skeleton className="h-36" />
+          ) : (
+            <Card>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[12px] font-semibold text-ios-label-secondary uppercase tracking-wider">
+                  Last 7 Days ({chartMetric.toUpperCase()})
+                </p>
+                <div className="flex gap-2 text-[11px] font-semibold text-ios-label-secondary">
+                  <button
+                    onClick={() => setChartMetric('revenue')}
+                    className={cn(chartMetric === 'revenue' && 'text-ios-green')}
+                  >
+                    Revenue
+                  </button>
+                  {canViewExpenses && (
+                    <>
+                      <span>·</span>
+                      <button
+                        onClick={() => setChartMetric('profit')}
+                        className={cn(chartMetric === 'profit' && 'text-ios-green')}
+                      >
+                        Net Profit
+                      </button>
+                    </>
+                  )}
+                  <span>·</span>
+                  <button
+                    onClick={() => setChartMetric('collected')}
+                    className={cn(chartMetric === 'collected' && 'text-ios-blue')}
+                  >
+                    Collected
+                  </button>
+                </div>
+              </div>
+              <div style={{ height: 140 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={chartData}
+                    margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={activeColor} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={activeColor} stopOpacity={0.0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="label"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 11, fill: '#8E8E93', fontWeight: 500 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-separator)',
+                        borderRadius: '12px',
+                        boxShadow: 'var(--shadow-card)',
+                        color: 'var(--color-label)',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        borderWidth: '1px',
+                      }}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(value: any) => [formatRWF(Number(value) || 0), chartMetric.toUpperCase()]}
+                      labelStyle={{ color: '#8E8E93', fontWeight: 'normal' }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey={chartMetric}
+                      stroke={activeColor}
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#colorMetric)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          )
+        )}
+
         {/* Collection rate progress card */}
-        {!isLoading && (
+        {canViewSales && !isLoading && (
           <Card>
             <p className="text-[12px] font-semibold text-ios-label-secondary uppercase tracking-wider mb-2">
               Collection Efficiency
@@ -556,7 +607,7 @@ export default function DashboardPage() {
         )}
 
         {/* Brand distribution pie chart */}
-        {!isLoading && (
+        {canViewSales && !isLoading && (
           <Card>
             <p className="text-[12px] font-semibold text-ios-label-secondary uppercase tracking-wider mb-3">
               Sales by Brand ({period})
@@ -603,83 +654,45 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* Stock value card */}
-        {isLoading ? (
-          <Skeleton className="h-28" />
-        ) : (
-          <Card>
-            <p className="text-[12px] font-semibold text-ios-label-secondary uppercase tracking-wider mb-3">
-              Stock Overview
-            </p>
-            <div className="grid grid-cols-3 divide-x divide-ios-separator/10">
-              <StockMetric label="Sell Value" value={formatRWF(sellValue)} />
-              <StockMetric label="Cost Value" value={formatRWF(costValue)} className="px-3" />
-              <StockMetric
-                label="Pairs Left"
-                value={formatCount(pairsLeft)}
-                valueColor="var(--color-blue)"
-                className="pl-3"
-              />
-            </div>
-          </Card>
-        )}
-
         {/* Recent sales with expandable details */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <p className="text-[22px] font-bold text-ios-label">Recent Sales</p>
-            {!isLoading && (
-              <Badge variant="gray">{formatCount(filteredSales.length)}</Badge>
+        {canViewSales && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <p className="text-[22px] font-bold text-ios-label">Recent Sales</p>
+              {!isLoading && (
+                <Badge variant="gray">{formatCount(filteredSales.length)}</Badge>
+              )}
+            </div>
+
+            {isLoading ? (
+              <Card padding="none">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className={cn(i < 4 && 'border-b border-ios-separator/10')}>
+                    <SaleRowSkeleton />
+                  </div>
+                ))}
+              </Card>
+            ) : recentSales.length === 0 ? (
+              <Card>
+                <p className="text-center text-[15px] text-ios-label-secondary py-8">No sales yet</p>
+              </Card>
+            ) : (
+              <Card padding="none">
+                {recentSales.map((sale, idx) => (
+                  <SaleRow
+                    key={sale.id}
+                    sale={sale}
+                    isLast={idx === recentSales.length - 1}
+                    expanded={expandedSaleId === sale.id}
+                    onToggle={() => toggleExpandSale(sale.id)}
+                  />
+                ))}
+              </Card>
             )}
           </div>
-
-          {isLoading ? (
-            <Card padding="none">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className={cn(i < 4 && 'border-b border-ios-separator/10')}>
-                  <SaleRowSkeleton />
-                </div>
-              ))}
-            </Card>
-          ) : recentSales.length === 0 ? (
-            <Card>
-              <p className="text-center text-[15px] text-ios-label-secondary py-8">No sales yet</p>
-            </Card>
-          ) : (
-            <Card padding="none">
-              {recentSales.map((sale, idx) => (
-                <SaleRow
-                  key={sale.id}
-                  sale={sale}
-                  isLast={idx === recentSales.length - 1}
-                  expanded={expandedSaleId === sale.id}
-                  onToggle={() => toggleExpandSale(sale.id)}
-                />
-              ))}
-            </Card>
-          )}
-        </div>
+        )}
       </div>
     </div>
   )
 }
 
-// ─── sub-components ───────────────────────────────────────────────────────────
-
-interface StockMetricProps {
-  label: string
-  value: string
-  valueColor?: string
-  className?: string
-}
-
-function StockMetric({ label, value, valueColor = 'var(--color-label)', className }: StockMetricProps) {
-  return (
-    <div className={cn('flex flex-col gap-0.5', className)}>
-      <p className="text-[11px] font-medium text-ios-label-secondary uppercase tracking-wide">{label}</p>
-      <p className="text-[17px] font-bold leading-tight" style={{ color: valueColor }}>
-        {value}
-      </p>
-    </div>
-  )
-}

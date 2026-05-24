@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { id } from '@instantdb/react'
 import {
@@ -218,8 +218,8 @@ export default function SellPage() {
   const router = useRouter()
 
   const { data, isLoading } = db.useQuery({ stockItems: {} })
-  const allItems = (data?.stockItems ?? []) as StockItem[]
-  const inStockItems = allItems.filter((item) => item.qty > 0)
+  const allItems = useMemo(() => (data?.stockItems ?? []) as StockItem[], [data?.stockItems])
+  const inStockItems = useMemo(() => allItems.filter((item) => item.qty > 0), [allItems])
 
   // Mode
   const [mode, setMode] = useState<Mode>('stock')
@@ -253,17 +253,43 @@ export default function SellPage() {
   const debt = totalAmount > 0 ? Math.max(0, totalAmount - amountPaidNum) : 0
   const hasDebt = debt > 0
   const formReady = mode === 'manual' || selectedItem !== null
-  const maxQty = mode === 'stock' && selectedItem ? selectedItem.qty : undefined
 
-  const filteredItems = inStockItems.filter((item) => {
-    if (!search.trim()) return true
-    const q = search.toLowerCase()
-    return (
-      item.brand.toLowerCase().includes(q) ||
-      (item.color?.toLowerCase().includes(q) ?? false) ||
-      (item.size?.toLowerCase().includes(q) ?? false)
+  // Find matching stock item for manual entry (by brand, color, size - case insensitive)
+  const matchingStockItem = useMemo(() => {
+    if (mode !== 'manual') return null
+    if (!brand.trim()) return null
+    return allItems.find(
+      (item) =>
+        item.brand.toLowerCase() === brand.trim().toLowerCase() &&
+        (item.color ?? '').toLowerCase() === color.trim().toLowerCase() &&
+        (item.size ?? '').toLowerCase() === size.trim().toLowerCase()
     )
-  })
+  }, [allItems, mode, brand, color, size])
+
+  // Get active stock item (from selection or matching manual entry) to validate quantity
+  const activeStockItem = selectedItem || matchingStockItem
+
+  // Max quantity allowed to sell
+  const maxQty = activeStockItem ? activeStockItem.qty : undefined
+
+  // Cap stepper quantity dynamically if maxQty decreases or matches
+  useEffect(() => {
+    if (maxQty !== undefined && qty > maxQty) {
+      setQty(Math.max(1, maxQty))
+    }
+  }, [maxQty, qty])
+
+  const filteredItems = useMemo(() => {
+    return inStockItems.filter((item) => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return (
+        item.brand.toLowerCase().includes(q) ||
+        (item.color?.toLowerCase().includes(q) ?? false) ||
+        (item.size?.toLowerCase().includes(q) ?? false)
+      )
+    })
+  }, [inStockItems, search])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -304,10 +330,27 @@ export default function SellPage() {
   async function handleSubmit() {
     if (!brand.trim()) { setError('Brand is required'); return }
     if (sellPriceNum <= 0) { setError('Sell price must be greater than 0'); return }
-    if (mode === 'stock' && selectedItem && qty > selectedItem.qty) {
-      setError(`Only ${selectedItem.qty} pair(s) in stock`)
+    
+    // Ensure we do not sell more than what is available in stock
+    const activeItem = selectedItem || matchingStockItem
+    if (!activeItem) {
+      if (mode === 'manual') {
+        setError('This shoe is not in stock. Please add it to stock first.')
+      } else {
+        setError('Please select a shoe from stock')
+      }
       return
     }
+
+    if (activeItem.qty <= 0) {
+      setError(`This shoe is out of stock (${activeItem.qty} left)`)
+      return
+    }
+    if (qty > activeItem.qty) {
+      setError(`Only ${activeItem.qty} pair(s) in stock`)
+      return
+    }
+
     if (hasDebt && !customerName.trim()) {
       setError('Customer name is required when there is a debt')
       return
@@ -336,11 +379,12 @@ export default function SellPage() {
         ...(note.trim() ? { note: note.trim() } : {}),
       }
 
+      const finalItem = selectedItem || matchingStockItem
       const baseOps = [db.tx.sales[newSaleId].update(saleData)]
-      const linkOps = selectedItem
+      const linkOps = finalItem
         ? [
-            db.tx.sales[newSaleId].link({ stockItem: selectedItem.id }),
-            db.tx.stockItems[selectedItem.id].update({ qty: selectedItem.qty - qty }),
+            db.tx.sales[newSaleId].link({ stockItem: finalItem.id }),
+            db.tx.stockItems[finalItem.id].update({ qty: finalItem.qty - qty }),
           ]
         : []
 
@@ -468,6 +512,29 @@ export default function SellPage() {
               inputMode="numeric"
               placeholder="0"
             />
+            
+            {brand.trim() && (
+              <div className={cn(
+                "rounded-2xl px-4 py-3 flex items-center justify-between border transition-all duration-200 shadow-sm",
+                matchingStockItem 
+                  ? matchingStockItem.qty > 0 
+                    ? "bg-ios-green-light/20 dark:bg-ios-green/10 border-ios-green/20" 
+                    : "bg-ios-red-light/20 dark:bg-ios-red/10 border-ios-red/20"
+                  : "bg-ios-orange-light/20 dark:bg-ios-orange/10 border-ios-orange/20"
+              )}>
+                <span className="text-[14px] font-semibold text-ios-label">Stock Status</span>
+                <span className={cn(
+                  "text-[14px] font-bold",
+                  matchingStockItem 
+                    ? matchingStockItem.qty > 0 ? "text-ios-green" : "text-ios-red"
+                    : "text-ios-orange"
+                )}>
+                  {matchingStockItem 
+                    ? `${matchingStockItem.qty} pair(s) available` 
+                    : "Not found in stock"}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
