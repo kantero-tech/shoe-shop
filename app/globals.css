@@ -56,6 +56,40 @@
     "Helvetica Neue", "Helvetica", "Arial", sans-serif;
 }
 
+.dark {
+  /* Core colors */
+  --color-bg: #0C0C0E;
+  --color-surface: #1C1C1E;
+  --color-label: #FFFFFF;
+  --color-label-secondary: #8E8E93;
+  --color-label-tertiary: #48484A;
+  --color-separator: #2C2C2E;
+
+  /* iOS accent colors - dark versions */
+  --color-blue: #0A84FF;
+  --color-blue-light: rgba(10, 132, 255, 0.15);
+  --color-green: #30D158;
+  --color-green-light: rgba(48, 209, 88, 0.15);
+  --color-red: #FF453A;
+  --color-red-light: rgba(255, 69, 58, 0.15);
+  --color-orange: #FF9F0A;
+  --color-orange-light: rgba(255, 159, 10, 0.15);
+  --color-purple: #BF5AF2;
+  --color-purple-light: rgba(191, 90, 242, 0.15);
+
+  /* Fill colors */
+  --color-fill: #1C1C1E;
+  --color-fill-secondary: #2C2C2E;
+  --color-fill-tertiary: #3A3A3C;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-nav: 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+
 /* Base reset */
 *,
 *::before,

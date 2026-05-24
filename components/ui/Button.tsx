@@ -11,10 +11,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-[#007AFF] text-white active:bg-[#0062CC] shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
-  secondary: 'bg-[#F2F2F7] text-[#007AFF] active:bg-[#E5E5EA]',
-  danger: 'bg-[#FF3B30] text-white active:bg-[#D93025] shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
-  ghost: 'bg-transparent text-[#007AFF] active:bg-[#F2F2F7]',
+  primary: 'bg-ios-blue text-white active:opacity-90 shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
+  secondary: 'bg-ios-fill text-ios-blue active:bg-ios-fill-secondary dark:bg-[#2C2C2E] dark:text-ios-blue',
+  danger: 'bg-ios-red text-white active:opacity-90 shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
+  ghost: 'bg-transparent text-ios-blue active:bg-ios-fill dark:active:bg-[#2C2C2E]',
 }
 
 export function Button({

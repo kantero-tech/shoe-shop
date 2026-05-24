@@ -6,15 +6,17 @@ import { cn } from '@/lib/utils'
 
 const tabs = [
   {
-    href: '/',
+    href: '/dashboard',
     label: 'Dashboard',
     icon: (active: boolean) => (
       <svg
         width="24"
         height="24"
         viewBox="0 0 24 24"
-        fill={active ? '#007AFF' : 'none'}
-        stroke={active ? '#007AFF' : '#8E8E93'}
+        className={cn(
+          'transition-colors duration-200',
+          active ? 'stroke-ios-blue fill-ios-blue' : 'stroke-ios-label-secondary fill-none'
+        )}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -33,7 +35,10 @@ const tabs = [
         height="24"
         viewBox="0 0 24 24"
         fill="none"
-        stroke={active ? '#007AFF' : '#8E8E93'}
+        className={cn(
+          'transition-colors duration-200',
+          active ? 'stroke-ios-blue' : 'stroke-ios-label-secondary'
+        )}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -53,7 +58,10 @@ const tabs = [
         height="24"
         viewBox="0 0 24 24"
         fill="none"
-        stroke={active ? '#007AFF' : '#8E8E93'}
+        className={cn(
+          'transition-colors duration-200',
+          active ? 'stroke-ios-blue' : 'stroke-ios-label-secondary'
+        )}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -72,13 +80,38 @@ const tabs = [
         height="24"
         viewBox="0 0 24 24"
         fill="none"
-        stroke={active ? '#007AFF' : '#8E8E93'}
+        className={cn(
+          'transition-colors duration-200',
+          active ? 'stroke-ios-blue' : 'stroke-ios-label-secondary'
+        )}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
         <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
         <line x1="1" y1="10" x2="23" y2="10" />
+      </svg>
+    ),
+  },
+  {
+    href: '/expenses',
+    label: 'Expenses',
+    icon: (active: boolean) => (
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        className={cn(
+          'transition-colors duration-200',
+          active ? 'stroke-ios-blue' : 'stroke-ios-label-secondary'
+        )}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
   },
@@ -92,15 +125,18 @@ export function BottomNav() {
       className={cn(
         'fixed bottom-0 left-0 right-0 z-50',
         'flex items-stretch',
-        'bg-white/80 backdrop-blur-[20px] backdrop-saturate-150',
-        'border-t border-black/[0.06]',
-        'shadow-[0_-1px_0_rgba(0,0,0,0.06)]',
+        'bg-ios-surface/80 dark:bg-ios-surface/80 backdrop-blur-[20px] backdrop-saturate-150',
+        'border-t border-ios-separator/20',
+        'shadow-nav',
         'pb-safe'
       )}
       style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
     >
       {tabs.map((tab) => {
-        const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
+        // Handle path matching correctly
+        const isActive = tab.href === '/dashboard' 
+          ? (pathname === '/' || pathname.startsWith('/dashboard'))
+          : pathname.startsWith(tab.href)
 
         return (
           <Link
@@ -116,8 +152,8 @@ export function BottomNav() {
             {tab.icon(isActive)}
             <span
               className={cn(
-                'text-[10px] font-medium leading-none mt-0.5',
-                isActive ? 'text-[#007AFF]' : 'text-[#8E8E93]'
+                'text-[10px] font-medium leading-none mt-0.5 transition-colors duration-200',
+                isActive ? 'text-ios-blue' : 'text-ios-label-secondary'
               )}
             >
               {tab.label}

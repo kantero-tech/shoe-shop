@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { id } from '@instantdb/react'
-import { Package, Plus, Search, Trash2, X } from 'lucide-react'
+import { Package, Plus, Search, Trash2, X, SlidersHorizontal } from 'lucide-react'
 import { db } from '@/lib/db'
 import type { StockItem } from '@/lib/schema'
 import { Badge } from '@/components/ui/Badge'
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { cn, formatRWF } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { FilterDrawer, type FilterState } from '@/components/ui/FilterDrawer'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -39,13 +40,13 @@ function QtyBadge({ qty }: { qty: number }) {
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 px-8 text-center">
-      <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-card">
-        <Package size={36} className="text-[#C7C7CC]" />
+    <div className="flex flex-col items-center justify-center gap-4 py-24 px-8 text-center bg-ios-surface rounded-2xl shadow-card dark:border dark:border-[#2C2C2E] mx-4">
+      <div className="w-20 h-20 rounded-full bg-ios-fill dark:bg-[#2C2C2E] flex items-center justify-center shadow-sm">
+        <Package size={36} className="text-ios-label-tertiary" />
       </div>
       <div className="flex flex-col gap-1">
-        <p className="text-[17px] font-semibold text-[#1C1C1E]">No stock yet</p>
-        <p className="text-[15px] text-[#8E8E93]">Tap + to add your first shoe</p>
+        <p className="text-[17px] font-semibold text-ios-label">No stock yet</p>
+        <p className="text-[15px] text-ios-label-secondary">Tap + to add your first shoe</p>
       </div>
       <Button onClick={onAdd}>Add your first shoe →</Button>
     </div>
@@ -57,6 +58,16 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 export default function StockPage() {
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<FilterTab>('All')
+
+  // Filter drawer state
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filters, setFilters] = useState<FilterState>({
+    sort: 'date-newest',
+    sizes: [],
+    minPrice: '',
+    maxPrice: '',
+    lowStockOnly: false,
+  })
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -73,15 +84,76 @@ export default function StockPage() {
   const { data, isLoading } = db.useQuery({ stockItems: {} })
   const allItems = useMemo(() => (data?.stockItems ?? []) as StockItem[], [data?.stockItems])
 
+  // Extract available sizes dynamically
+  const availableSizes = useMemo(() => {
+    const set = new Set<string>()
+    allItems.forEach((item) => {
+      if (item.size) set.add(item.size)
+    })
+    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b) || a.localeCompare(b))
+  }, [allItems])
+
+  // Dynamic visible list based on Search, Tabs, and FilterDrawer State
   const visible = useMemo(() => {
-    let items = allItems
+    let items = [...allItems]
+
+    // 1. Search
     const q = search.trim().toLowerCase()
-    if (q) items = items.filter((item) => item.brand.toLowerCase().includes(q))
+    if (q) {
+      items = items.filter(
+        (item) =>
+          item.brand.toLowerCase().includes(q) ||
+          (item.color?.toLowerCase().includes(q) ?? false) ||
+          (item.size?.toLowerCase().includes(q) ?? false)
+      )
+    }
+
+    // 2. Tab quick filter
     if (tab === 'In Stock') items = items.filter((item) => item.qty > 2)
     if (tab === 'Low Stock') items = items.filter((item) => item.qty > 0 && item.qty <= 2)
     if (tab === 'Out of Stock') items = items.filter((item) => item.qty === 0)
+
+    // 3. Size tags
+    if (filters.sizes.length > 0) {
+      items = items.filter((item) => item.size && filters.sizes.includes(item.size))
+    }
+
+    // 4. Price range
+    if (filters.minPrice.trim()) {
+      const min = parseFloat(filters.minPrice)
+      if (!isNaN(min)) items = items.filter((item) => item.sellPrice >= min)
+    }
+    if (filters.maxPrice.trim()) {
+      const max = parseFloat(filters.maxPrice)
+      if (!isNaN(max)) items = items.filter((item) => item.sellPrice <= max)
+    }
+
+    // 5. Low stock filter toggle
+    if (filters.lowStockOnly) {
+      items = items.filter((item) => item.qty <= 2)
+    }
+
+    // 6. Advanced Sorting
+    items.sort((a, b) => {
+      switch (filters.sort) {
+        case 'alphabetical':
+          return a.brand.localeCompare(b.brand)
+        case 'price-high':
+          return b.sellPrice - a.sellPrice
+        case 'price-low':
+          return a.sellPrice - b.sellPrice
+        case 'qty-high':
+          return b.qty - a.qty
+        case 'qty-low':
+          return a.qty - b.qty
+        case 'date-newest':
+        default:
+          return new Date(b.dateAdded || 0).getTime() - new Date(a.dateAdded || 0).getTime()
+      }
+    })
+
     return items
-  }, [allItems, search, tab])
+  }, [allItems, search, tab, filters])
 
   // ── Sheet helpers ────────────────────────────────────────────────────────────
   function openAdd() {
@@ -152,16 +224,26 @@ export default function StockPage() {
     setDeleteTarget(null)
   }
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (filters.sizes.length > 0) count++
+    if (filters.minPrice) count++
+    if (filters.maxPrice) count++
+    if (filters.lowStockOnly) count++
+    if (filters.sort !== 'date-newest') count++
+    return count
+  }, [filters])
+
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <>
+    <div className="min-h-screen bg-ios-bg">
       {/* ── Save success toast ── */}
       <div
         className={cn(
           'fixed top-16 left-1/2 -translate-x-1/2 z-[90]',
           'flex items-center gap-2 px-4 py-2.5 rounded-full',
-          'bg-[#1C1C1E] text-white text-[15px] font-semibold',
-          'shadow-lg pointer-events-none',
+          'bg-[#1C1C1E] dark:bg-[#2C2C2E] text-white text-[15px] font-semibold',
+          'shadow-lg pointer-events-none border border-white/[0.04]',
           'transition-all duration-300',
           saved ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
         )}
@@ -177,41 +259,59 @@ export default function StockPage() {
           <button
             onClick={openAdd}
             aria-label="Add shoe"
-            className="w-11 h-11 rounded-full bg-[#007AFF] flex items-center justify-center shadow-sm active:scale-90 transition-all duration-150"
+            className="w-11 h-11 rounded-full bg-ios-blue flex items-center justify-center shadow-sm active:scale-90 transition-all duration-150"
           >
             <Plus size={22} className="text-white" strokeWidth={2.5} />
           </button>
         }
       />
 
-      {/* ── iOS-style search bar ── */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center gap-2 bg-[#E5E5EA] rounded-[12px] px-3 h-9">
-          <Search size={15} className="text-[#8E8E93] shrink-0" />
+      {/* ── iOS-style search & filter bar ── */}
+      <div className="px-4 pb-3 flex gap-2">
+        <div className="flex-1 flex items-center gap-2 bg-ios-fill-secondary dark:bg-[#2C2C2E] rounded-[12px] px-3 h-9">
+          <Search size={15} className="text-ios-label-secondary shrink-0" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search"
-            className="flex-1 bg-transparent text-[15px] text-[#1C1C1E] placeholder:text-[#8E8E93] outline-none"
+            placeholder="Search brand, size, color…"
+            className="flex-1 bg-transparent text-[15px] text-ios-label placeholder:text-ios-label-secondary outline-none"
           />
           {search && (
             <button onClick={() => setSearch('')} className="shrink-0">
-              <X size={14} className="text-[#8E8E93]" />
+              <X size={14} className="text-ios-label-secondary" />
             </button>
           )}
         </div>
+        <button
+          onClick={() => setFilterOpen(true)}
+          className={cn(
+            'px-3.5 rounded-[12px] flex items-center justify-center gap-1.5 text-[14px] font-semibold transition-all h-9 select-none active:scale-95 border border-transparent',
+            activeFilterCount > 0
+              ? 'bg-ios-blue text-white'
+              : 'bg-ios-fill-secondary dark:bg-[#2C2C2E] text-ios-label dark:border-white/[0.04]'
+          )}
+        >
+          <SlidersHorizontal size={15} />
+          <span>Filter</span>
+          {activeFilterCount > 0 && (
+            <span className="w-5 h-5 rounded-full bg-white text-ios-blue flex items-center justify-center text-[11px] font-bold">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* ── Filter pills ── */}
+      {/* ── Filter pills (Quick tabs) ── */}
       <div className="flex gap-2 px-4 pb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              'shrink-0 px-4 h-[44px] rounded-full text-[13px] font-medium',
-              'transition-all duration-150 active:scale-95',
-              t === tab ? 'bg-[#007AFF] text-white' : 'bg-[#E5E5EA] text-[#3C3C3E]'
+              'shrink-0 px-4 h-[44px] rounded-full text-[13px] font-medium transition-all select-none active:scale-95',
+              t === tab
+                ? 'bg-ios-blue text-white'
+                : 'bg-ios-fill-secondary dark:bg-[#2C2C2E] text-ios-label'
             )}
           >
             {t}
@@ -233,20 +333,20 @@ export default function StockPage() {
         ) : allItems.length === 0 ? (
           <EmptyState onAdd={openAdd} />
         ) : visible.length === 0 ? (
-          <p className="text-center py-16 text-[15px] text-[#8E8E93]">No items match</p>
+          <p className="text-center py-16 text-[15px] text-ios-label-secondary font-medium">No items match filters</p>
         ) : (
           visible.map((item) => (
-            <div key={item.id} className="flex items-center gap-2.5">
+            <div key={item.id} className="flex items-center gap-2.5 animate-fadeIn">
               <Card className="flex-1 min-w-0" padding="sm" onClick={() => openEdit(item)}>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-semibold text-[#1C1C1E] leading-snug truncate">
+                    <p className="text-[15px] font-semibold text-ios-label leading-snug truncate">
                       {item.brand}
                       {item.color && (
-                        <span className="font-normal text-[#8E8E93]"> ({item.color})</span>
+                        <span className="font-normal text-ios-label-secondary"> ({item.color})</span>
                       )}
                     </p>
-                    <p className="text-[13px] text-[#8E8E93] mt-0.5 truncate">
+                    <p className="text-[13px] text-ios-label-secondary mt-0.5 truncate font-medium">
                       {[
                         item.size ? `Size ${item.size}` : null,
                         `Buy: ${formatRWF(item.buyPrice)}`,
@@ -262,7 +362,7 @@ export default function StockPage() {
               <button
                 onClick={() => setDeleteTarget(item)}
                 aria-label={`Delete ${item.brand}`}
-                className="shrink-0 w-11 h-11 rounded-2xl bg-[#FFE9E8] text-[#D70015] flex items-center justify-center active:scale-90 transition-all duration-150"
+                className="shrink-0 w-11 h-11 rounded-2xl bg-ios-red-light text-ios-red flex items-center justify-center active:scale-90 transition-all duration-150"
               >
                 <Trash2 size={17} />
               </button>
@@ -271,14 +371,13 @@ export default function StockPage() {
         )}
       </div>
 
-      {/* ══════════════════ Bottom Sheet ══════════════════ */}
+      {/* ══════════════════ Add/Edit Drawer Sheet ══════════════════ */}
 
       {/* Backdrop */}
       <div
         aria-hidden="true"
         className={cn(
-          'fixed inset-0 z-[60] bg-black/40',
-          'transition-opacity duration-300',
+          'fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300',
           sheetOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
         onClick={closeSheet}
@@ -291,27 +390,27 @@ export default function StockPage() {
         aria-label={editItem ? 'Edit Shoe' : 'Add Shoe'}
         className={cn(
           'fixed bottom-0 left-0 right-0 z-[70]',
-          'bg-white rounded-t-3xl',
+          'bg-ios-surface rounded-t-3xl border-t border-ios-separator/10',
           'transition-transform duration-300 ease-out',
           sheetOpen ? 'translate-y-0' : 'translate-y-full'
         )}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3">
-          <div className="w-10 h-1 rounded-full bg-[#D1D1D6]" />
+          <div className="w-10 h-1 rounded-full bg-ios-fill-tertiary" />
         </div>
 
         {/* Title row */}
         <div className="flex items-center justify-between px-5 pt-3 pb-4">
-          <h2 className="text-[20px] font-bold text-[#1C1C1E]">
+          <h2 className="text-[20px] font-bold text-ios-label">
             {editItem ? 'Edit Shoe' : 'Add Shoe'}
           </h2>
           <button
             onClick={closeSheet}
             aria-label="Close"
-            className="w-8 h-8 rounded-full bg-[#F2F2F7] flex items-center justify-center active:scale-90 transition-all duration-150"
+            className="w-8 h-8 rounded-full bg-ios-fill-secondary dark:bg-[#2C2C2E] flex items-center justify-center active:scale-90 transition-all"
           >
-            <X size={16} className="text-[#3C3C3E]" />
+            <X size={16} className="text-ios-label-secondary" />
           </button>
         </div>
 
@@ -390,7 +489,7 @@ export default function StockPage() {
             </Button>
             <button
               onClick={closeSheet}
-              className="text-[17px] font-medium text-[#8E8E93] py-2 text-center active:opacity-60 transition-opacity"
+              className="text-[17px] font-semibold text-ios-label-secondary py-2 text-center active:opacity-60 transition-opacity"
             >
               Cancel
             </button>
@@ -398,7 +497,7 @@ export default function StockPage() {
         </div>
       </div>
 
-      {/* ══════════════════ Delete Alert ══════════════════ */}
+      {/* ══════════════════ Delete Confirmation Alert ══════════════════ */}
       <div
         className={cn(
           'fixed inset-0 z-[80] flex items-center justify-center px-10',
@@ -413,35 +512,44 @@ export default function StockPage() {
         />
         <div
           className={cn(
-            'relative w-full max-w-[270px] bg-white rounded-[14px] overflow-hidden shadow-2xl',
+            'relative w-full max-w-[270px] bg-ios-surface rounded-[14px] overflow-hidden shadow-2xl dark:border dark:border-[#2C2C2E]',
             'transition-transform duration-200',
             deleteTarget ? 'scale-100' : 'scale-95'
           )}
         >
           <div className="pt-5 pb-3 px-5 text-center">
-            <p className="text-[17px] font-semibold text-[#1C1C1E]">Delete Shoe</p>
-            <p className="text-[13px] text-[#8E8E93] mt-1 leading-normal">
+            <p className="text-[17px] font-semibold text-ios-label">Delete Shoe</p>
+            <p className="text-[13px] text-ios-label-secondary mt-1 leading-normal">
               Remove{' '}
-              <span className="text-[#1C1C1E] font-medium">{deleteTarget?.brand}</span> from
+              <span className="text-ios-label font-bold">{deleteTarget?.brand}</span> from
               stock? This cannot be undone.
             </p>
           </div>
-          <div className="border-t border-[#C6C6C8] flex">
+          <div className="border-t border-ios-separator/20 flex">
             <button
               onClick={() => setDeleteTarget(null)}
-              className="flex-1 py-3 text-[17px] font-medium text-[#007AFF] border-r border-[#C6C6C8] active:bg-[#F2F2F7] transition-colors"
+              className="flex-1 py-3 text-[17px] font-medium text-ios-blue border-r border-ios-separator/20 active:bg-ios-fill dark:active:bg-[#2C2C2E] transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleDelete}
-              className="flex-1 py-3 text-[17px] font-semibold text-[#FF3B30] active:bg-[#FFE9E8] transition-colors"
+              className="flex-1 py-3 text-[17px] font-semibold text-ios-red active:bg-ios-red-light/50 transition-colors"
             >
               Delete
             </button>
           </div>
         </div>
       </div>
-    </>
+
+      {/* Advanced Filter Drawer Sheet */}
+      <FilterDrawer
+        isOpen={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        initialFilters={filters}
+        onApply={(newFilters) => setFilters(newFilters)}
+        availableSizes={availableSizes}
+      />
+    </div>
   )
 }

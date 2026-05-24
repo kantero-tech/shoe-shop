@@ -22,9 +22,17 @@ const _schema = i.schema({
       amountPaid: i.number(),
       isPaid: i.boolean(),
       customerName: i.string(),
+      customerPhone: i.string(),
       paymentMethod: i.string(),
       date: i.string(),
       note: i.string(),
+    }),
+    expenses: i.entity({
+      description: i.string(),
+      amount: i.number(),
+      date: i.string(),
+      isRecurring: i.boolean(),
+      frequency: i.string(), // 'daily' | 'weekly' | 'monthly' | 'one-time'
     }),
   },
   links: {
@@ -68,8 +76,19 @@ export interface Sale {
   amountPaid?: number;
   isPaid?: boolean;
   customerName?: string;
+  customerPhone?: string;
   paymentMethod?: PaymentMethod;
   date?: string;
   stockItemId?: string;
   note?: string;
 }
+
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  isRecurring: boolean;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'one-time';
+}
+

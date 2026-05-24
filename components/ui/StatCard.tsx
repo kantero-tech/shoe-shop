@@ -10,15 +10,17 @@ interface StatCardProps {
   trend?: number
   color?: StatCardColor
   className?: string
+  onClick?: () => void
+  active?: boolean
 }
 
 const colorMap: Record<StatCardColor, { value: string; bg: string; dot: string }> = {
-  default: { value: 'text-[#1C1C1E]', bg: '', dot: 'bg-[#8E8E93]' },
-  blue: { value: 'text-[#007AFF]', bg: 'bg-[#E3F0FF]', dot: 'bg-[#007AFF]' },
-  green: { value: 'text-[#34C759]', bg: 'bg-[#E3F9EA]', dot: 'bg-[#34C759]' },
-  red: { value: 'text-[#FF3B30]', bg: 'bg-[#FFE9E8]', dot: 'bg-[#FF3B30]' },
-  orange: { value: 'text-[#FF9500]', bg: 'bg-[#FFF4E3]', dot: 'bg-[#FF9500]' },
-  purple: { value: 'text-[#AF52DE]', bg: 'bg-[#F4E8FF]', dot: 'bg-[#AF52DE]' },
+  default: { value: 'text-ios-label', bg: '', dot: 'bg-ios-label-secondary' },
+  blue: { value: 'text-ios-blue', bg: 'bg-ios-blue-light', dot: 'bg-ios-blue' },
+  green: { value: 'text-ios-green dark:text-[#30D158]', bg: 'bg-ios-green-light', dot: 'bg-ios-green' },
+  red: { value: 'text-ios-red dark:text-[#FF453A]', bg: 'bg-ios-red-light', dot: 'bg-ios-red' },
+  orange: { value: 'text-ios-orange dark:text-[#FF9F0A]', bg: 'bg-ios-orange-light', dot: 'bg-ios-orange' },
+  purple: { value: 'text-ios-purple dark:text-[#BF5AF2]', bg: 'bg-ios-purple-light', dot: 'bg-ios-purple' },
 }
 
 export function StatCard({
@@ -28,13 +30,22 @@ export function StatCard({
   trend,
   color = 'default',
   className,
+  onClick,
+  active,
 }: StatCardProps) {
   const styles = colorMap[color]
   const trendPositive = trend !== undefined && trend >= 0
 
   return (
-    <Card className={cn('flex flex-col gap-1', className)}>
-      <p className="text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide leading-none">
+    <Card
+      onClick={onClick}
+      className={cn(
+        'flex flex-col gap-1 transition-all duration-300',
+        active && 'ring-2 ring-ios-blue shadow-lg scale-[1.02] bg-ios-blue-light/10',
+        className
+      )}
+    >
+      <p className="text-[13px] font-medium text-ios-label-secondary uppercase tracking-wide leading-none">
         {label}
       </p>
       <p className={cn('text-[28px] font-bold leading-tight', styles.value)}>{value}</p>
@@ -43,16 +54,17 @@ export function StatCard({
           <span
             className={cn(
               'inline-flex items-center gap-0.5 text-[13px] font-semibold',
-              trendPositive ? 'text-[#34C759]' : 'text-[#FF3B30]'
+              trendPositive ? 'text-ios-green' : 'text-ios-red'
             )}
           >
             {trendPositive ? '▲' : '▼'} {Math.abs(trend)}%
           </span>
         )}
         {subLabel && (
-          <span className="text-[13px] text-[#8E8E93]">{subLabel}</span>
+          <span className="text-[13px] text-ios-label-secondary">{subLabel}</span>
         )}
       </div>
     </Card>
   )
 }
+

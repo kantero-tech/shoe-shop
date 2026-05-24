@@ -66,12 +66,84 @@ export function filterByPeriod<T>(
   })
 }
 
-interface SaleItem {
-  totalAmount: number
-  buyPrice: number
-  qty: number
+
+
+import type { Expense } from './schema'
+
+export function calcExpenseForPeriod(
+  expense: Expense,
+  period: Period
+): number {
+  const expenseDate = new Date(expense.date)
+  const now = new Date()
+
+  // helper to get start date of period
+  const getPeriodStart = (): Date => {
+    const d = new Date(now)
+    if (period === 'Today') {
+      d.setHours(0, 0, 0, 0)
+    } else if (period === 'This Week') {
+      const day = d.getDay()
+      d.setDate(d.getDate() - day)
+      d.setHours(0, 0, 0, 0)
+    } else if (period === 'This Month') {
+      d.setDate(1)
+      d.setHours(0, 0, 0, 0)
+    } else if (period === 'This Year') {
+      d.setMonth(0, 1)
+      d.setHours(0, 0, 0, 0)
+    } else {
+      return new Date(0) // All time
+    }
+    return d
+  }
+
+  const periodStart = getPeriodStart()
+
+  // If the expense starts in the future relative to now, return 0
+  if (expenseDate > now) return 0
+
+  if (!expense.isRecurring || expense.frequency === 'one-time') {
+    // One-time expense applies fully if it occurred in the period
+    return expenseDate >= periodStart ? expense.amount : 0
+  }
+
+  // Recurring expenses:
+  // 1. Daily expense:
+  if (expense.frequency === 'daily') {
+    const startDate = expenseDate > periodStart ? expenseDate : periodStart
+    const msDiff = now.getTime() - startDate.getTime()
+    const days = Math.max(1, Math.floor(msDiff / (1000 * 60 * 60 * 24)) + 1)
+    return days * expense.amount
+  }
+
+  // 2. Weekly expense:
+  if (expense.frequency === 'weekly') {
+    if (period === 'Today') {
+      return expense.amount / 7
+    }
+    const startDate = expenseDate > periodStart ? expenseDate : periodStart
+    const msDiff = now.getTime() - startDate.getTime()
+    const weeks = Math.max(1, Math.floor(msDiff / (1000 * 60 * 60 * 24 * 7)) + 1)
+    return weeks * expense.amount
+  }
+
+  // 3. Monthly expense (e.g. Rent):
+  if (expense.frequency === 'monthly') {
+    if (period === 'Today') {
+      return expense.amount / 30
+    }
+    if (period === 'This Week') {
+      return (expense.amount / 30) * 7
+    }
+
+    const startDate = expenseDate > periodStart ? expenseDate : periodStart
+    const yearsDiff = now.getFullYear() - startDate.getFullYear()
+    const monthsDiff = now.getMonth() - startDate.getMonth()
+    const totalMonths = Math.max(1, yearsDiff * 12 + monthsDiff + 1)
+    return totalMonths * expense.amount
+  }
+
+  return 0
 }
 
-export function calcProfit(sales: SaleItem[]): number {
-  return sales.reduce((acc, sale) => acc + (sale.totalAmount - sale.buyPrice * sale.qty), 0)
-}

@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -11,20 +12,20 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         ios: {
-          blue: "#007AFF",
-          green: "#34C759",
-          red: "#FF3B30",
-          orange: "#FF9500",
-          purple: "#AF52DE",
-          label: "#1C1C1E",
-          "label-secondary": "#8E8E93",
-          "label-tertiary": "#C7C7CC",
-          separator: "#C6C6C8",
-          fill: "#F2F2F7",
-          "fill-secondary": "#E5E5EA",
-          "fill-tertiary": "#D1D1D6",
-          surface: "#FFFFFF",
-          bg: "#F2F2F7",
+          blue: "var(--color-blue)",
+          green: "var(--color-green)",
+          red: "var(--color-red)",
+          orange: "var(--color-orange)",
+          purple: "var(--color-purple)",
+          label: "var(--color-label)",
+          "label-secondary": "var(--color-label-secondary)",
+          "label-tertiary": "var(--color-label-tertiary)",
+          separator: "var(--color-separator)",
+          fill: "var(--color-fill)",
+          "fill-secondary": "var(--color-fill-secondary)",
+          "fill-tertiary": "var(--color-fill-tertiary)",
+          surface: "var(--color-surface)",
+          bg: "var(--color-bg)",
         },
       },
       borderRadius: {

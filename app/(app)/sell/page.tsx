@@ -48,7 +48,7 @@ function SegmentedControl({
   onChange: (v: string) => void
 }) {
   return (
-    <div className="flex bg-[#E5E5EA] rounded-[14px] p-1">
+    <div className="flex bg-ios-fill-secondary dark:bg-[#2C2C2E] rounded-[14px] p-1">
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -57,8 +57,8 @@ function SegmentedControl({
             'flex-1 py-2 rounded-[10px] text-[15px] font-semibold select-none',
             'transition-all duration-200 active:scale-[0.98]',
             value === opt.value
-              ? 'bg-white text-[#1C1C1E] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
-              : 'text-[#8E8E93]'
+              ? 'bg-ios-surface text-ios-label shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+              : 'text-ios-label-secondary'
           )}
         >
           {opt.label}
@@ -81,8 +81,8 @@ function QtyStep({
   const atMax = max !== undefined && value >= max
 
   return (
-    <div className="flex items-center justify-between bg-white rounded-2xl px-4 h-[56px] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]">
-      <span className="text-[17px] font-medium text-[#1C1C1E]">Quantity</span>
+    <div className="flex items-center justify-between bg-ios-surface dark:border dark:border-[#2C2C2E] rounded-2xl px-4 h-[56px] shadow-card">
+      <span className="text-[17px] font-medium text-ios-label">Quantity</span>
       <div className="flex items-center gap-4">
         <button
           onClick={() => !atMin && onChange(value - 1)}
@@ -91,13 +91,13 @@ function QtyStep({
           className={cn(
             'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150',
             atMin
-              ? 'bg-[#F2F2F7] text-[#C7C7CC]'
-              : 'bg-[#E3F0FF] text-[#007AFF] active:scale-90'
+              ? 'bg-ios-fill dark:bg-[#2C2C2E] text-ios-label-tertiary'
+              : 'bg-ios-blue-light text-ios-blue active:scale-90'
           )}
         >
           <Minus size={16} strokeWidth={2.5} />
         </button>
-        <span className="text-[22px] font-bold text-[#1C1C1E] w-7 text-center tabular-nums">
+        <span className="text-[22px] font-bold text-ios-label w-7 text-center tabular-nums">
           {value}
         </span>
         <button
@@ -107,8 +107,8 @@ function QtyStep({
           className={cn(
             'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150',
             atMax
-              ? 'bg-[#F2F2F7] text-[#C7C7CC]'
-              : 'bg-[#E3F0FF] text-[#007AFF] active:scale-90'
+              ? 'bg-ios-fill dark:bg-[#2C2C2E] text-ios-label-tertiary'
+              : 'bg-ios-blue-light text-ios-blue active:scale-90'
           )}
         >
           <Plus size={16} strokeWidth={2.5} />
@@ -127,7 +127,7 @@ function PaymentMethodPicker({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-[15px] font-medium text-[#1C1C1E] pl-1">Payment Method</label>
+      <label className="text-[15px] font-medium text-ios-label pl-1">Payment Method</label>
       <div className="flex gap-2">
         {PAYMENT_METHODS.map(({ value: v, label, Icon }) => {
           const active = value === v
@@ -140,8 +140,8 @@ function PaymentMethodPicker({
                 'text-[13px] font-semibold select-none',
                 'transition-all duration-200 active:scale-[0.96]',
                 active
-                  ? 'bg-[#007AFF] text-white shadow-[0_1px_2px_rgba(0,0,0,0.12)]'
-                  : 'bg-[#F2F2F7] text-[#8E8E93]'
+                  ? 'bg-ios-blue text-white shadow-[0_1px_2px_rgba(0,0,0,0.12)]'
+                  : 'bg-ios-fill dark:bg-[#2C2C2E] text-ios-label-secondary'
               )}
             >
               <Icon size={20} />
@@ -170,23 +170,23 @@ const StockRow = /*#__PURE__*/ React.memo(function StockRow({
         'w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-left',
         'transition-all duration-200 active:scale-[0.98] select-none',
         selected
-          ? 'bg-[#E3F0FF] ring-1 ring-[#007AFF]/30'
-          : 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]'
+          ? 'bg-ios-blue-light ring-1 ring-ios-blue/30 dark:bg-ios-blue/20'
+          : 'bg-ios-surface shadow-card dark:border dark:border-[#2C2C2E]'
       )}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-[17px] font-semibold text-[#1C1C1E] truncate">{item.brand}</p>
-        <p className="text-[15px] text-[#8E8E93] mt-0.5">
+        <p className="text-[17px] font-semibold text-ios-label truncate">{item.brand}</p>
+        <p className="text-[15px] text-ios-label-secondary mt-0.5">
           {[item.color, item.size ? `Size ${item.size}` : null].filter(Boolean).join(' · ') || '—'}
         </p>
       </div>
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="text-right">
-          <p className="text-[17px] font-bold text-[#007AFF]">{formatRWF(item.sellPrice)}</p>
-          <p className="text-[12px] text-[#C7C7CC]">×{formatCount(item.qty)}</p>
+          <p className="text-[17px] font-bold text-ios-blue">{formatRWF(item.sellPrice)}</p>
+          <p className="text-[12px] text-ios-label-tertiary">×{formatCount(item.qty)}</p>
         </div>
         {selected && (
-          <div className="w-6 h-6 rounded-full bg-[#007AFF] flex items-center justify-center shrink-0">
+          <div className="w-6 h-6 rounded-full bg-ios-blue flex items-center justify-center shrink-0">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M2 6l3 3 5-6"
@@ -206,8 +206,8 @@ const StockRow = /*#__PURE__*/ React.memo(function StockRow({
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-start gap-4">
-      <span className="text-[15px] text-[#8E8E93] shrink-0">{label}</span>
-      <span className="text-[15px] text-[#1C1C1E] text-right">{value || '—'}</span>
+      <span className="text-[15px] text-ios-label-secondary shrink-0">{label}</span>
+      <span className="text-[15px] text-ios-label text-right">{value || '—'}</span>
     </div>
   )
 }
@@ -238,6 +238,7 @@ export default function SellPage() {
   const [amountPaid, setAmountPaid] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
   const [customerName, setCustomerName] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
   const [note, setNote] = useState('')
 
   // UI state
@@ -289,6 +290,7 @@ export default function SellPage() {
     setAmountPaid('')
     setPaymentMethod('Cash')
     setCustomerName('')
+    setCustomerPhone('')
     setNote('')
     setSearch('')
     setError('')
@@ -328,6 +330,7 @@ export default function SellPage() {
         amountPaid: amountPaidNum,
         isPaid: !capturedHasDebt,
         customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
         paymentMethod,
         date: new Date().toISOString(),
         ...(note.trim() ? { note: note.trim() } : {}),
@@ -359,18 +362,18 @@ export default function SellPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7]">
+    <div className="min-h-screen bg-ios-bg pb-36">
       {/* ── Success overlay ── */}
       {success && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
         >
-          <div className="flex flex-col items-center gap-4 bg-white rounded-3xl px-12 py-10 mx-6 shadow-2xl">
-            <div className="w-24 h-24 rounded-full bg-[#E3F9EA] flex items-center justify-center">
-              <CheckCircle2 size={48} className="text-[#34C759]" />
+          <div className="flex flex-col items-center gap-4 bg-ios-surface rounded-3xl px-12 py-10 mx-6 shadow-2xl dark:border dark:border-[#2C2C2E]">
+            <div className="w-24 h-24 rounded-full bg-ios-green-light flex items-center justify-center animate-bounce">
+              <CheckCircle2 size={48} className="text-ios-green" />
             </div>
-            <p className="text-[22px] font-bold text-[#1C1C1E]">Sale Recorded!</p>
+            <p className="text-[22px] font-bold text-ios-label">Sale Recorded!</p>
           </div>
         </div>
       )}
@@ -378,7 +381,7 @@ export default function SellPage() {
       {/* ── Header ── */}
       <PageHeader title="Sell" />
 
-      <div className="px-4 flex flex-col gap-4 pb-10">
+      <div className="px-4 flex flex-col gap-4">
         {/* ── Mode selector ── */}
         <SegmentedControl
           options={[
@@ -393,17 +396,17 @@ export default function SellPage() {
         {mode === 'stock' && (
           <div className="flex flex-col gap-3">
             {/* Search bar */}
-            <div className="flex items-center gap-2 bg-[#E5E5EA] rounded-[12px] px-3 h-9">
-              <Search size={15} className="text-[#8E8E93] shrink-0" />
+            <div className="flex items-center gap-2 bg-ios-fill-secondary dark:bg-[#2C2C2E] rounded-[12px] px-3 h-9">
+              <Search size={15} className="text-ios-label-secondary shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search brand, color, size…"
-                className="flex-1 bg-transparent text-[15px] text-[#1C1C1E] placeholder:text-[#8E8E93] outline-none"
+                className="flex-1 bg-transparent text-[15px] text-ios-label placeholder:text-ios-label-secondary outline-none"
               />
               {search && (
                 <button onClick={() => setSearch('')} className="shrink-0 active:opacity-60">
-                  <X size={14} className="text-[#8E8E93]" />
+                  <X size={14} className="text-ios-label-secondary" />
                 </button>
               )}
             </div>
@@ -416,7 +419,7 @@ export default function SellPage() {
                 ))}
               </div>
             ) : filteredItems.length === 0 ? (
-              <p className="text-center py-10 text-[15px] text-[#8E8E93]">
+              <p className="text-center py-10 text-[15px] text-ios-label-secondary">
                 {search ? 'No items match your search' : 'No items in stock'}
               </p>
             ) : (
@@ -473,11 +476,11 @@ export default function SellPage() {
           <>
             {/* Section divider */}
             <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-[#E5E5EA]" />
-              <span className="text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">
+              <div className="flex-1 h-px bg-ios-separator/10" />
+              <span className="text-[12px] font-semibold text-ios-label-secondary uppercase tracking-wider">
                 Sale Details
               </span>
-              <div className="flex-1 h-px bg-[#E5E5EA]" />
+              <div className="flex-1 h-px bg-ios-separator/10" />
             </div>
 
             {/* Sell Price */}
@@ -494,19 +497,19 @@ export default function SellPage() {
             <QtyStep value={qty} onChange={setQty} max={maxQty} />
 
             {/* Total amount */}
-            <div className="bg-[#E3F0FF] rounded-2xl px-4 py-4 flex items-center justify-between">
-              <span className="text-[17px] font-semibold text-[#007AFF]">Total Amount</span>
-              <span className="text-[26px] font-bold text-[#007AFF] tabular-nums">
+            <div className="bg-ios-blue-light dark:bg-ios-blue/10 rounded-2xl px-4 py-4 flex items-center justify-between">
+              <span className="text-[17px] font-semibold text-ios-blue">Total Amount</span>
+              <span className="text-[26px] font-bold text-ios-blue tabular-nums">
                 {formatRWF(totalAmount)}
               </span>
             </div>
 
             {/* Amount paid + full payment shortcut */}
-            <div className="bg-white rounded-2xl px-4 pt-3 pb-4 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]">
+            <div className="bg-ios-surface dark:border dark:border-[#2C2C2E] rounded-2xl px-4 pt-3 pb-4 shadow-card">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[15px] font-medium text-[#1C1C1E]">Amount Paid</label>
+                <label className="text-[15px] font-medium text-ios-label">Amount Paid</label>
                 <button
-                  className="text-[15px] font-semibold text-[#007AFF] active:opacity-50 transition-opacity"
+                  className="text-[15px] font-semibold text-ios-blue active:opacity-50 transition-opacity"
                   onClick={() => setAmountPaid(String(totalAmount))}
                 >
                   Full payment
@@ -518,15 +521,15 @@ export default function SellPage() {
                 onChange={(e) => setAmountPaid(e.target.value)}
                 inputMode="numeric"
                 placeholder="0"
-                className="w-full bg-transparent text-[20px] font-semibold text-[#1C1C1E] placeholder:text-[#C7C7CC] outline-none tabular-nums"
+                className="w-full bg-transparent text-[20px] font-semibold text-ios-label placeholder:text-ios-label-tertiary outline-none tabular-nums"
               />
             </div>
 
             {/* Debt banner */}
             {hasDebt && (
-              <div className="bg-[#FFF4E3] rounded-2xl px-4 py-3.5">
-                <p className="text-[17px] font-bold text-[#FF9500]">Debt: {formatRWF(debt)}</p>
-                <p className="text-[13px] text-[#FF9500] mt-0.5">
+              <div className="bg-ios-orange-light rounded-2xl px-4 py-3.5">
+                <p className="text-[17px] font-bold text-ios-orange dark:text-[#FF9F0A]">Debt: {formatRWF(debt)}</p>
+                <p className="text-[13px] text-ios-orange dark:text-[#FF9F0A] mt-0.5">
                   Customer will owe this amount
                 </p>
               </div>
@@ -535,14 +538,23 @@ export default function SellPage() {
             {/* Payment method */}
             <PaymentMethodPicker value={paymentMethod} onChange={setPaymentMethod} />
 
-            {/* Customer name — only required when there is a debt */}
+            {/* Customer details — only required when there is a debt */}
             {hasDebt && (
-              <Input
-                label="Customer Name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Enter customer name"
-              />
+              <div className="flex flex-col gap-3">
+                <Input
+                  label="Customer Name"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Enter customer name"
+                />
+                <Input
+                  label="Customer Phone (for payment reminders)"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="e.g. 0788123456 or +250..."
+                  type="tel"
+                />
+              </div>
             )}
 
             {/* Note */}
@@ -554,8 +566,8 @@ export default function SellPage() {
             />
 
             {/* ── Sale summary preview ── */}
-            <Card className="bg-[#F9F9FB]">
-              <p className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wider mb-3">
+            <Card className="bg-ios-fill/50 dark:bg-[#1E1E24] border border-ios-separator/10">
+              <p className="text-[11px] font-semibold text-ios-label-secondary uppercase tracking-wider mb-3">
                 Sale Summary
               </p>
               <div className="flex flex-col gap-2.5">
@@ -582,9 +594,9 @@ export default function SellPage() {
                   }
                 />
                 {hasDebt && (
-                  <div className="flex justify-between pt-0.5 border-t border-[#F2F2F7] mt-0.5">
-                    <span className="text-[15px] font-semibold text-[#FF9500]">Debt</span>
-                    <span className="text-[15px] font-bold text-[#FF9500]">{formatRWF(debt)}</span>
+                  <div className="flex justify-between pt-0.5 border-t border-ios-separator/10 mt-0.5">
+                    <span className="text-[15px] font-semibold text-ios-orange dark:text-[#FF9F0A]">Debt</span>
+                    <span className="text-[15px] font-bold text-ios-orange dark:text-[#FF9F0A]">{formatRWF(debt)}</span>
                   </div>
                 )}
               </div>
@@ -592,7 +604,7 @@ export default function SellPage() {
 
             {/* Validation error */}
             {error && (
-              <p className="text-[15px] text-[#FF3B30] text-center font-medium">{error}</p>
+              <p className="text-[15px] text-ios-red text-center font-medium">{error}</p>
             )}
 
             {/* Record Sale */}

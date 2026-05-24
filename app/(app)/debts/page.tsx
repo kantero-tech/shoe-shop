@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useCallback } from 'react'
+import { Phone, MessageCircle, Check, CreditCard } from 'lucide-react'
 import { db } from '@/lib/db'
 import type { Sale } from '@/lib/schema'
 import { formatRWF, cn, formatCount } from '@/lib/utils'
@@ -75,6 +76,15 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
     }
   }
 
+  // Pre-fill WhatsApp reminder template
+  const getWhatsAppLink = () => {
+    if (!sale.customerPhone) return '#'
+    const cleanPhone = sale.customerPhone.replace(/[^0-9+]/g, '')
+    const shoeInfo = `${sale.brand || 'shoes'}${sale.color ? ` (${sale.color})` : ''}${sale.size ? `, size ${sale.size}` : ''}`
+    const message = `Hello ${sale.customerName || 'there'},\n\nThis is a friendly reminder regarding your outstanding balance of ${formatRWF(owes)} for the ${shoeInfo} purchased on ${formatSaleDate(sale.date)}. Thank you!`
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+  }
+
   return (
     // Outer wrapper handles the exit slide-out animation
     <div
@@ -91,52 +101,74 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
         padding="md"
         className={cn(
           'transition-colors duration-500',
-          exitPhase === 'flash' && 'bg-[#E3F9EA]'
+          exitPhase === 'flash' && 'bg-ios-green-light dark:bg-ios-green/10'
         )}
       >
-        {/* Customer name */}
-        <p className="text-[20px] font-bold text-[#1C1C1E] leading-tight">
-          {sale.customerName?.trim() || 'Unknown Customer'}
-        </p>
+        {/* Customer Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[20px] font-bold text-ios-label leading-tight truncate">
+              {sale.customerName?.trim() || 'Unknown Customer'}
+            </p>
+            {/* Shoe info line */}
+            <p className="text-[13px] text-ios-label-secondary mt-1 mb-2 leading-snug">
+              {[sale.brand, sale.color ? `(${sale.color})` : null].filter(Boolean).join(' ')}
+              {sale.size ? ` · Size ${sale.size}` : ''}
+              {sale.date ? ` · ${formatSaleDate(sale.date)}` : ''}
+            </p>
+          </div>
+          {sale.paymentMethod && (
+            <Badge variant="blue" className="shrink-0">{sale.paymentMethod}</Badge>
+          )}
+        </div>
 
-        {/* Shoe info line */}
-        <p className="text-[13px] text-[#8E8E93] mt-1 mb-3 leading-snug">
-          {[sale.brand, sale.color ? `(${sale.color})` : null].filter(Boolean).join(' ')}
-          {sale.size ? ` · Size ${sale.size}` : ''}
-          {sale.date ? ` · ${formatSaleDate(sale.date)}` : ''}
-        </p>
-
-        {/* Payment method badge */}
-        {sale.paymentMethod && (
-          <div className="mb-3">
-            <Badge variant="blue">{sale.paymentMethod}</Badge>
+        {/* Quick Contact Bar */}
+        {sale.customerPhone && (
+          <div className="flex items-center gap-3 mb-3 pt-1">
+            <a
+              href={`tel:${sale.customerPhone}`}
+              className="flex items-center gap-1.5 text-[13px] font-semibold text-ios-blue hover:opacity-80 transition-opacity"
+            >
+              <Phone size={14} />
+              Call
+            </a>
+            <span className="text-ios-label-tertiary">|</span>
+            <a
+              href={getWhatsAppLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[13px] font-semibold text-ios-green hover:opacity-80 transition-opacity"
+            >
+              <MessageCircle size={14} />
+              WhatsApp Reminder
+            </a>
           </div>
         )}
 
         {/* Progress bar */}
         <div className="mb-4">
-          <div className="h-1.5 w-full rounded-full bg-[#E5E5EA] overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-ios-fill dark:bg-[#2C2C2E] overflow-hidden">
             <div
-              className="h-full rounded-full bg-[#007AFF] transition-all duration-700 ease-out"
+              className="h-full rounded-full bg-ios-blue transition-all duration-700 ease-out"
               style={{ width: `${pct}%` }}
             />
           </div>
-          <p className="text-[11px] text-[#8E8E93] mt-1">{Math.round(pct)}% paid</p>
+          <p className="text-[11px] text-ios-label-secondary mt-1 font-medium">{Math.round(pct)}% paid</p>
         </div>
 
         {/* Paid / Owes amounts */}
         <div className="flex gap-6 mb-4">
           <div>
-            <p className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wide mb-0.5">
+            <p className="text-[11px] font-semibold text-ios-label-secondary uppercase tracking-wide mb-0.5">
               Paid
             </p>
-            <p className="text-[16px] font-semibold text-[#34C759]">{formatRWF(amountPaid)}</p>
+            <p className="text-[16px] font-semibold text-ios-green">{formatRWF(amountPaid)}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wide mb-0.5">
+            <p className="text-[11px] font-semibold text-ios-label-secondary uppercase tracking-wide mb-0.5">
               Owes
             </p>
-            <p className="text-[16px] font-bold text-[#FF9500]">{formatRWF(owes)}</p>
+            <p className="text-[16px] font-bold text-ios-orange dark:text-[#FF9F0A]">{formatRWF(owes)}</p>
           </div>
         </div>
 
@@ -145,14 +177,15 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
           <button
             onClick={onToggleExpand}
             className={cn(
-              'w-full h-[44px] rounded-xl',
-              'border-2 border-[#007AFF] text-[#007AFF]',
+              'w-full h-[44px] rounded-xl flex items-center justify-center gap-2',
+              'border-2 border-ios-blue text-ios-blue',
               'text-[15px] font-semibold',
               'transition-all duration-200',
-              'active:scale-[0.97] active:bg-[#E3F0FF]',
+              'active:scale-[0.97] active:bg-ios-blue-light/30',
               'select-none'
             )}
           >
+            <CreditCard size={16} />
             Record Payment
           </button>
         )}
@@ -167,7 +200,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
           }}
         >
           <div className="min-h-0">
-            <div className="pt-4 border-t border-[#F2F2F7] flex flex-col gap-3">
+            <div className="pt-4 border-t border-ios-separator/10 flex flex-col gap-3">
               <Input
                 label="Amount received (RWF)"
                 type="number"
@@ -188,12 +221,12 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
                 disabled={submitting}
                 className={cn(
                   'flex items-center gap-1.5 text-left',
-                  'text-[14px] font-semibold text-[#34C759]',
+                  'text-[14px] font-semibold text-ios-green',
                   'transition-opacity active:opacity-60',
                   submitting && 'opacity-40 pointer-events-none'
                 )}
               >
-                <CheckIcon />
+                <Check size={16} className="text-ios-green" />
                 Mark as Fully Paid&nbsp;({formatRWF(owes)})
               </button>
 
@@ -215,7 +248,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
                     onToggleExpand()
                   }}
                   disabled={submitting}
-                  className="shrink-0 text-[15px] font-medium text-[#8E8E93] px-1"
+                  className="shrink-0 text-[15px] font-medium text-ios-label-secondary px-1"
                 >
                   Cancel
                 </button>
@@ -231,7 +264,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
 // ─── skeleton ────────────────────────────────────────────────────────────────
 
 function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse bg-[#E5E5EA] rounded-2xl', className)} />
+  return <div className={cn('animate-pulse bg-ios-fill-secondary dark:bg-[#2C2C2E] rounded-2xl', className)} />
 }
 
 // ─── empty state ─────────────────────────────────────────────────────────────
@@ -239,22 +272,11 @@ function Skeleton({ className }: { className?: string }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4">
-      <div className="w-20 h-20 rounded-full bg-[#E3F9EA] flex items-center justify-center mb-5">
-        <svg
-          width="36"
-          height="36"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#34C759"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+      <div className="w-20 h-20 rounded-full bg-ios-green-light flex items-center justify-center mb-5">
+        <Check size={36} className="text-ios-green" strokeWidth={3} />
       </div>
-      <p className="text-[22px] font-bold text-[#1C1C1E] mb-1">No outstanding debts!</p>
-      <p className="text-[15px] text-[#8E8E93]">Great job!</p>
+      <p className="text-[22px] font-bold text-ios-label mb-1">No outstanding debts!</p>
+      <p className="text-[15px] text-ios-label-secondary font-medium">Great job!</p>
     </div>
   )
 }
@@ -272,31 +294,11 @@ function SummaryCard({
 }) {
   return (
     <Card className="flex flex-col gap-1.5">
-      <p className="text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">{label}</p>
+      <p className="text-[12px] font-semibold text-ios-label-secondary uppercase tracking-wider">{label}</p>
       <p className="text-[26px] font-bold leading-tight" style={{ color: valueColor }}>
         {value}
       </p>
     </Card>
-  )
-}
-
-// ─── icon ────────────────────────────────────────────────────────────────────
-
-function CheckIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#34C759"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
   )
 }
 
@@ -400,12 +402,12 @@ export default function DebtsPage() {
   )
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-bg)' }}>
+    <div className="min-h-screen bg-ios-bg pb-36">
       <PageHeader
         title="Debts"
         action={
           !isLoading && totalOutstanding > 0 ? (
-            <Badge variant="orange" className="text-[13px] px-3 py-1">
+            <Badge variant="orange" className="text-[13px] px-3 py-1 font-bold">
               {formatRWF(totalOutstanding)}
             </Badge>
           ) : undefined
@@ -457,8 +459,6 @@ export default function DebtsPage() {
             ))}
           </div>
         )}
-
-        <div className="h-4" />
       </div>
     </div>
   )
