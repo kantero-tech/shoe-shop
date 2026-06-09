@@ -3,98 +3,68 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { id } from '@instantdb/react'
-import { Trash2, Plus, X, ChevronRight, ShieldCheck } from 'lucide-react'
+import {
+  Trash2, Plus, X, ChevronRight, ShieldCheck,
+  Tag, Package, ScrollText, CreditCard, Wallet, BarChart3,
+  Boxes, PackagePlus, Pencil, HandCoins, Receipt, Eye,
+  type LucideIcon,
+} from 'lucide-react'
 import { db } from '@/lib/db'
 import type { AppUser } from '@/lib/schema'
 import { hashPin, getSession } from '@/lib/auth'
 import { useIsEmployer } from '@/lib/permissions-context'
+import {
+  PERMISSION_META, PERM_GROUPS, DEFAULT_PERMISSIONS, readPermissions,
+  type PermKey, type PermGroup, type Permissions,
+} from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 
 // ─── permission definitions ───────────────────────────────────────────────────
 
-type PermKey = 'canSell' | 'canViewStock' | 'canViewDebts' | 'canViewSales' | 'canViewExpenses'
-
 interface PermDef {
   key: PermKey
   label: string
   description: string
-  icon: React.ReactNode
+  group: PermGroup
+  Icon: LucideIcon
   color: string
   bg: string
 }
 
-const PERMISSIONS: PermDef[] = [
-  {
-    key: 'canSell',
-    label: 'Sell',
-    description: 'Create new sales and process transactions',
-    color: '#6C63FF',
-    bg: '#EEEDFF',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-        <line x1="7" y1="7" x2="7.01" y2="7" />
-      </svg>
-    ),
-  },
-  {
-    key: 'canViewStock',
-    label: 'Stock',
-    description: 'View and manage inventory, add or edit shoes',
-    color: '#007A50',
-    bg: '#DFFBEF',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-      </svg>
-    ),
-  },
-  {
-    key: 'canViewSales',
-    label: 'Sales History',
-    description: 'Browse and search all past sales records',
-    color: '#0369A1',
-    bg: '#E0F2FE',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-  },
-  {
-    key: 'canViewDebts',
-    label: 'Debts',
-    description: 'See outstanding debts and record payments',
-    color: '#C07A10',
-    bg: '#FFF4DB',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-        <line x1="1" y1="10" x2="23" y2="10" />
-      </svg>
-    ),
-  },
-  {
-    key: 'canViewExpenses',
-    label: 'Expenses',
-    description: 'View and add business expense records',
-    color: '#CC1234',
-    bg: '#FFE5EB',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
-  },
-]
+const PERM_ICONS: Record<PermKey, LucideIcon> = {
+  canSell: Tag,
+  canViewStock: Package,
+  canViewSales: ScrollText,
+  canViewDebts: CreditCard,
+  canViewExpenses: Wallet,
+  canViewReports: BarChart3,
+  canManageStock: Boxes,
+  canReceiveStock: PackagePlus,
+  canEditSales: Pencil,
+  canRecordPayments: HandCoins,
+  canManageExpenses: Receipt,
+  canSeeCostPrices: Eye,
+}
+
+const GROUP_STYLE: Record<PermGroup, { color: string; bg: string }> = {
+  Pages: { color: '#6C63FF', bg: '#EEEDFF' },
+  Actions: { color: '#007A50', bg: '#DFFBEF' },
+  Sensitive: { color: '#CC1234', bg: '#FFE5EB' },
+}
+
+const PERMISSIONS: PermDef[] = PERMISSION_META.map((m) => ({
+  ...m,
+  Icon: PERM_ICONS[m.key],
+  color: GROUP_STYLE[m.group].color,
+  bg: GROUP_STYLE[m.group].bg,
+}))
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function getPermValue(user: AppUser, key: PermKey): boolean {
-  return (user[key] as boolean | undefined) ?? true
+  return user[key] ?? true
 }
 
 function activePermCount(user: AppUser): number {
@@ -111,6 +81,21 @@ function PinDot({ filled }: { filled: boolean }) {
 
 function PinPad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
+
+  // Let desktop users type the PIN with the physical keyboard.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (/^[0-9]$/.test(e.key)) {
+        if (value.length < 4) onChange(value + e.key)
+      } else if (e.key === 'Backspace') {
+        e.preventDefault()
+        onChange(value.slice(0, -1))
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [value, onChange])
+
   return (
     <div className="w-full">
       <div className="flex justify-center gap-3.5 mb-5">
@@ -166,7 +151,7 @@ function PermCard({
         className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200"
         style={{ background: enabled ? def.bg : '#E8E6F5', color: enabled ? def.color : '#B0ADCA' }}
       >
-        {def.icon}
+        <def.Icon size={18} />
       </div>
 
       {/* Text */}
@@ -191,6 +176,34 @@ function PermCard({
   )
 }
 
+// ─── Grouped permission list ──────────────────────────────────────────────────
+
+function PermissionList({
+  perms,
+  onToggle,
+}: {
+  perms: Permissions
+  onToggle: (key: PermKey, value: boolean) => void
+}) {
+  return (
+    <>
+      {PERM_GROUPS.map((group) => (
+        <div key={group} className="flex flex-col gap-2">
+          <p className="text-[11px] font-bold text-[#B0ADCA] uppercase tracking-widest pl-1">{group}</p>
+          {PERMISSIONS.filter((d) => d.group === group).map((def) => (
+            <PermCard
+              key={def.key}
+              def={def}
+              enabled={perms[def.key]}
+              onChange={(v) => onToggle(def.key, v)}
+            />
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
 // ─── Employee detail sheet ────────────────────────────────────────────────────
 
 function EmployeeSheet({
@@ -203,21 +216,11 @@ function EmployeeSheet({
   onDelete: (u: AppUser) => void
 }) {
   const open = user !== null
-  const [perms, setPerms] = useState<Record<PermKey, boolean>>({
-    canSell: true, canViewStock: true, canViewDebts: true, canViewSales: true, canViewExpenses: true,
-  })
+  const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMISSIONS)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (user) {
-      setPerms({
-        canSell: getPermValue(user, 'canSell'),
-        canViewStock: getPermValue(user, 'canViewStock'),
-        canViewDebts: getPermValue(user, 'canViewDebts'),
-        canViewSales: getPermValue(user, 'canViewSales'),
-        canViewExpenses: getPermValue(user, 'canViewExpenses'),
-      })
-    }
+    if (user) setPerms(readPermissions(user))
   }, [user])
 
   async function handleToggle(key: PermKey, value: boolean) {
@@ -270,14 +273,7 @@ function EmployeeSheet({
             <p className="text-[12px] font-bold text-[#6B6889] uppercase tracking-widest">Access Permissions</p>
           </div>
 
-          {PERMISSIONS.map((def) => (
-            <PermCard
-              key={def.key}
-              def={def}
-              enabled={perms[def.key]}
-              onChange={(v) => handleToggle(def.key, v)}
-            />
-          ))}
+          <PermissionList perms={perms} onToggle={handleToggle} />
 
           {/* Danger zone */}
           <div className="mt-2 pt-4 border-t border-[#F5F4FF]">
@@ -303,13 +299,11 @@ function AddEmployeeSheet({ open, onClose }: { open: boolean; onClose: () => voi
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [perms, setPerms] = useState<Record<PermKey, boolean>>({
-    canSell: true, canViewStock: true, canViewDebts: true, canViewSales: true, canViewExpenses: true,
-  })
+  const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMISSIONS)
 
   function reset() {
     setStep('name'); setName(''); setPin(''); setConfirm(''); setError(''); setSaving(false)
-    setPerms({ canSell: true, canViewStock: true, canViewDebts: true, canViewSales: true, canViewExpenses: true })
+    setPerms(DEFAULT_PERMISSIONS)
   }
 
   useEffect(() => { if (!open) reset() }, [open])
@@ -371,14 +365,10 @@ function AddEmployeeSheet({ open, onClose }: { open: boolean; onClose: () => voi
                 <p className="text-[12px] font-bold text-[#6B6889] uppercase tracking-widest">Access Permissions</p>
               </div>
 
-              {PERMISSIONS.map((def) => (
-                <PermCard
-                  key={def.key}
-                  def={def}
-                  enabled={perms[def.key]}
-                  onChange={(v) => setPerms((p) => ({ ...p, [def.key]: v }))}
-                />
-              ))}
+              <PermissionList
+                perms={perms}
+                onToggle={(key, v) => setPerms((p) => ({ ...p, [key]: v }))}
+              />
 
               <Button fullWidth disabled={!name.trim()} onClick={() => setStep('pin')}>
                 Set PIN →

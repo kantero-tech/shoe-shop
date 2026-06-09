@@ -1,7 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { db } from '@/lib/db'
+import { useSession, useCan } from '@/lib/permissions-context'
 import type { Sale, Expense } from '@/lib/schema'
 import { formatRWF } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -86,7 +88,14 @@ function HBar({ label, value, total, color }: { label: string; value: number; to
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
+  const router = useRouter()
+  const session = useSession()
+  const canView = useCan('canViewReports')
   const [period, setPeriod] = useState<Period>('Month')
+
+  useEffect(() => {
+    if (session && !canView) router.replace('/dashboard')
+  }, [session, canView, router])
 
   const { data, isLoading } = db.useQuery({ sales: {}, expenses: {} })
 

@@ -1,14 +1,10 @@
 import type { UserRole } from './schema'
+import type { Permissions } from './permissions'
 
-export interface Session {
+export interface Session extends Permissions {
   userId: string
   name: string
   role: UserRole
-  canSell: boolean
-  canViewStock: boolean
-  canViewDebts: boolean
-  canViewSales: boolean
-  canViewExpenses: boolean
 }
 
 const SESSION_KEY = 'mpenzi_session'

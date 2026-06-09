@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { db } from '@/lib/db'
 import type { Sale, PaymentMethod, StockItem } from '@/lib/schema'
 import { formatRWF, formatDateShort, cn } from '@/lib/utils'
-import { useIsEmployer, useSession } from '@/lib/permissions-context'
+import { useIsEmployer, useSession, useCan } from '@/lib/permissions-context'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { DataTable, type Column } from '@/components/ui/DataTable'
@@ -241,13 +241,13 @@ function EditSheet({
 
 function DetailSheet({
   sale,
-  isEmployer,
+  canEdit,
   onEdit,
   onDelete,
   onClose,
 }: {
   sale: Sale | null
-  isEmployer: boolean
+  canEdit: boolean
   onEdit: () => void
   onDelete: () => void
   onClose: () => void
@@ -325,8 +325,8 @@ function DetailSheet({
             <Share2 size={16} /> Share via WhatsApp
           </button>
 
-          {/* Actions — employer only */}
-          {isEmployer && (
+          {/* Actions — requires the edit-sales permission */}
+          {canEdit && (
             <div className="flex gap-3 mt-3">
               <Button variant="secondary" fullWidth onClick={onEdit} className="rounded-xl">
                 <Edit2 size={15} className="mr-1" /> Edit
@@ -348,6 +348,7 @@ export default function SalesPage() {
   const router = useRouter()
   const session = useSession()
   const isEmployer = useIsEmployer()
+  const canEditSales = useCan('canEditSales')
 
   useEffect(() => {
     if (session && !isEmployer && !(session.canViewSales ?? true)) {
@@ -546,7 +547,7 @@ export default function SalesPage() {
       {/* Detail sheet */}
       <DetailSheet
         sale={detailSale}
-        isEmployer={isEmployer}
+        canEdit={canEditSales}
         onEdit={() => { setEditSale(detailSale); setDetailSale(null) }}
         onDelete={() => { setDeleteSale(detailSale); setDetailSale(null) }}
         onClose={() => setDetailSale(null)}

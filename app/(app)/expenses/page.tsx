@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { db } from '@/lib/db'
 import type { Expense, ExpenseCategory } from '@/lib/schema'
 import { formatRWF, formatDateShort, cn } from '@/lib/utils'
-import { useIsEmployer, useSession } from '@/lib/permissions-context'
+import { useIsEmployer, useSession, useCan } from '@/lib/permissions-context'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { DataTable, type Column } from '@/components/ui/DataTable'
@@ -158,12 +158,12 @@ function AddExpenseSheet({ open, onClose }: { open: boolean; onClose: () => void
 const ExpenseRow = React.memo(function ExpenseRow({
   expense,
   isLast,
-  isEmployer,
+  canManage,
   onDelete,
 }: {
   expense: Expense
   isLast: boolean
-  isEmployer: boolean
+  canManage: boolean
   onDelete: () => void
 }) {
   const colors = CATEGORY_COLORS[expense.category] ?? CATEGORY_COLORS.Other
@@ -187,7 +187,7 @@ const ExpenseRow = React.memo(function ExpenseRow({
 
       <p className="text-[15px] font-bold text-[#FF3D5A] shrink-0">{formatRWF(expense.amount)}</p>
 
-      {isEmployer && (
+      {canManage && (
         <button
           onClick={onDelete}
           className="ml-1 w-7 h-7 rounded-full bg-[#FFE8EC] flex items-center justify-center active:scale-90 transition-all"
@@ -218,6 +218,7 @@ export default function ExpensesPage() {
   const router = useRouter()
   const session = useSession()
   const isEmployer = useIsEmployer()
+  const canManage = useCan('canManageExpenses')
 
   useEffect(() => {
     if (session && !isEmployer && !(session.canViewExpenses ?? true)) {
@@ -295,7 +296,7 @@ export default function ExpensesPage() {
       align: 'right',
       render: (e) => <span className="font-bold" style={{ color: '#FF3D5A' }}>{formatRWF(e.amount)}</span>,
     },
-    ...(isEmployer
+    ...(canManage
       ? [
           {
             key: 'actions',
@@ -321,7 +322,7 @@ export default function ExpensesPage() {
         <PageHeader
           title="Expenses"
           action={
-            isEmployer ? (
+            canManage ? (
               <button
                 onClick={() => setSheetOpen(true)}
                 className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all"
@@ -418,7 +419,7 @@ export default function ExpensesPage() {
                       key={expense.id}
                       expense={expense}
                       isLast={idx === filtered.length - 1}
-                      isEmployer={isEmployer}
+                      canManage={canManage}
                       onDelete={() => setDeleteTarget(expense)}
                     />
                   ))}

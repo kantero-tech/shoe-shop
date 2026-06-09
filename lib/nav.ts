@@ -10,8 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { Session } from './auth'
-
-export type PermKey = 'canSell' | 'canViewStock' | 'canViewDebts' | 'canViewSales' | 'canViewExpenses'
+import type { PermKey } from './permissions'
 
 export interface NavItem {
   href: string
@@ -29,7 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/sales', label: 'Sales', Icon: ScrollText, permKey: 'canViewSales' },
   { href: '/debts', label: 'Debts', Icon: CreditCard, permKey: 'canViewDebts' },
   { href: '/expenses', label: 'Expenses', Icon: Wallet, permKey: 'canViewExpenses' },
-  { href: '/reports', label: 'Reports', Icon: BarChart3, employerOnly: true },
+  { href: '/reports', label: 'Reports', Icon: BarChart3, permKey: 'canViewReports' },
 ]
 
 /** Secondary destinations pinned to the sidebar footer. */
@@ -40,8 +39,14 @@ export const FOOTER_NAV: NavItem[] = [
 export function isNavItemVisible(item: NavItem, isEmployer: boolean, session: Session | null): boolean {
   if (item.employerOnly) return isEmployer
   if (isEmployer) return true
-  // Sellers can reach Stock to receive deliveries, even without full stock view.
-  if (item.href === '/stock') return (session?.canViewStock ?? true) || (session?.canSell ?? true)
+  // Stock is reachable by anyone who can view, manage, or receive stock.
+  if (item.href === '/stock') {
+    return (
+      (session?.canViewStock ?? true) ||
+      (session?.canManageStock ?? true) ||
+      (session?.canReceiveStock ?? true)
+    )
+  }
   if (item.permKey) return session?.[item.permKey] ?? true
   return true
 }

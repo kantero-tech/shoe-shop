@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation'
 import { id } from '@instantdb/react'
 import { Package, Plus, Search, Trash2, X, PackagePlus } from 'lucide-react'
 import { db } from '@/lib/db'
-import type { StockItem } from '@/lib/schema'
+import type { StockItem, Delivery } from '@/lib/schema'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DataTable, type Column } from '@/components/ui/DataTable'
-import { cn, formatRWF } from '@/lib/utils'
+import { cn, formatRWF, formatDateShort } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { useSession, useIsEmployer } from '@/lib/permissions-context'
+import { useSession, useCan, useCanAny } from '@/lib/permissions-context'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -61,14 +61,16 @@ function EmptyState({ canAdd, onAdd }: { canAdd: boolean; onAdd: () => void }) {
 export default function StockPage() {
   const router = useRouter()
   const session = useSession()
-  const isEmployer = useIsEmployer()
+  const canManage = useCan('canManageStock')
+  const canReceive = useCan('canReceiveStock')
+  const canSeeCost = useCan('canSeeCostPrices')
+  const canOpen = useCanAny(['canViewStock', 'canManageStock', 'canReceiveStock'])
 
   useEffect(() => {
-    // Sellers can reach this page to receive deliveries, even without full stock view.
-    if (session && !isEmployer && !session.canViewStock && !session.canSell) {
+    if (session && !canOpen) {
       router.replace('/dashboard')
     }
-  }, [session, isEmployer, router])
+  }, [session, canOpen, router])
 
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<FilterTab>('All')
@@ -84,6 +86,8 @@ export default function StockPage() {
   // Receive sheet state (employee records pairs that arrived)
   const [receiveTarget, setReceiveTarget] = useState<StockItem | null>(null)
   const [receiveQty, setReceiveQty] = useState('')
+  const [receiveColor, setReceiveColor] = useState('')
+  const [receiveSize, setReceiveSize] = useState('')
   const [receiveError, setReceiveError] = useState('')
   const [receiving, setReceiving] = useState(false)
 
@@ -91,8 +95,18 @@ export default function StockPage() {
   const [deleteTarget, setDeleteTarget] = useState<StockItem | null>(null)
 
   // ── Data ────────────────────────────────────────────────────────────────────
-  const { data, isLoading } = db.useQuery({ stockItems: {} })
+  const { data, isLoading } = db.useQuery({ stockItems: {}, deliveries: {} })
   const allItems = useMemo(() => (data?.stockItems ?? []) as StockItem[], [data?.stockItems])
+  const allDeliveries = useMemo(() => (data?.deliveries ?? []) as Delivery[], [data?.deliveries])
+
+  // Most recent deliveries for the type being received, newest first.
+  const recentDeliveries = useMemo(() => {
+    if (!receiveTarget) return []
+    return allDeliveries
+      .filter((d) => d.stockItemId === receiveTarget.id)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 4)
+  }, [allDeliveries, receiveTarget])
 
   const visible = useMemo(() => {
     let items = allItems
@@ -177,6 +191,8 @@ export default function StockPage() {
   function openReceive(item: StockItem) {
     setReceiveTarget(item)
     setReceiveQty('')
+    setReceiveColor('')
+    setReceiveSize('')
     setReceiveError('')
   }
 
@@ -191,11 +207,21 @@ export default function StockPage() {
       setReceiveError('Enter how many pairs arrived')
       return
     }
+    const pairs = Math.floor(received)
     setReceiving(true)
     try {
-      await db.transact(
-        db.tx.stockItems[receiveTarget.id].update({ qty: receiveTarget.qty + Math.floor(received) })
-      )
+      await db.transact([
+        db.tx.stockItems[receiveTarget.id].update({ qty: receiveTarget.qty + pairs }),
+        // Log the delivery so the owner can see what (and how many) arrived.
+        db.tx.deliveries[id()].update({
+          stockItemId: receiveTarget.id,
+          brand: receiveTarget.brand,
+          qty: pairs,
+          color: receiveColor.trim(),
+          size: receiveSize.trim(),
+          date: new Date().toISOString(),
+        }),
+      ])
       closeReceive()
       flashSaved()
     } finally {
@@ -209,10 +235,10 @@ export default function StockPage() {
     setDeleteTarget(null)
   }
 
-  // Tapping a row: owner edits the type, employee records a delivery.
+  // Tapping a row: managers edit the type, receivers record a delivery.
   function onRowTap(item: StockItem) {
-    if (isEmployer) openEdit(item)
-    else openReceive(item)
+    if (canManage) openEdit(item)
+    else if (canReceive) openReceive(item)
   }
 
   const columns: Column<StockItem>[] = [
@@ -252,14 +278,16 @@ export default function StockPage() {
       align: 'right',
       render: (s) => (
         <div className="inline-flex items-center gap-2">
-          <button
-            onClick={(e) => { e.stopPropagation(); openReceive(s) }}
-            aria-label={`Receive ${s.brand}`}
-            className="h-8 px-3 rounded-lg bg-[#EEEDFF] text-[#6C63FF] text-[13px] font-semibold inline-flex items-center gap-1 active:scale-95 transition-all"
-          >
-            <PackagePlus size={14} /> Receive
-          </button>
-          {isEmployer && (
+          {canReceive && (
+            <button
+              onClick={(e) => { e.stopPropagation(); openReceive(s) }}
+              aria-label={`Receive ${s.brand}`}
+              className="h-8 px-3 rounded-lg bg-[#EEEDFF] text-[#6C63FF] text-[13px] font-semibold inline-flex items-center gap-1 active:scale-95 transition-all"
+            >
+              <PackagePlus size={14} /> Receive
+            </button>
+          )}
+          {canManage && (
             <button
               onClick={(e) => { e.stopPropagation(); setDeleteTarget(s) }}
               aria-label={`Delete ${s.brand}`}
@@ -297,7 +325,7 @@ export default function StockPage() {
       <PageHeader
         title="Stock"
         action={
-          isEmployer ? (
+          canManage ? (
             <button
               onClick={openAdd}
               aria-label="Add shoe type"
@@ -364,7 +392,7 @@ export default function StockPage() {
             ))}
           </div>
         ) : allItems.length === 0 ? (
-          <EmptyState canAdd={isEmployer} onAdd={openAdd} />
+          <EmptyState canAdd={canManage} onAdd={openAdd} />
         ) : visible.length === 0 ? (
           <p className="text-center py-16 text-[15px] text-[#6B6889]">No items match</p>
         ) : (
@@ -372,7 +400,7 @@ export default function StockPage() {
           {/* Desktop: inventory table */}
           <div className="hidden lg:block">
             <DataTable
-              columns={isEmployer ? columns : columns.filter((c) => c.key !== 'buy')}
+              columns={canSeeCost ? columns : columns.filter((c) => c.key !== 'buy')}
               rows={visible}
               rowKey={(s) => s.id}
               onRowClick={(s) => onRowTap(s)}
@@ -401,7 +429,7 @@ export default function StockPage() {
                       </p>
                       <p className="text-[13px] text-[#6B6889] mt-0.5 truncate">
                         {[
-                          isEmployer ? `Buy: ${formatRWF(item.buyPrice)}` : null,
+                          canSeeCost ? `Buy: ${formatRWF(item.buyPrice)}` : null,
                           `Sell: ${formatRWF(item.sellPrice)}`,
                           item.supplier ? `From: ${item.supplier}` : null,
                         ]
@@ -415,15 +443,17 @@ export default function StockPage() {
                     <span className={cn('text-[12px] font-medium', isOut ? 'text-[#FF3D5A]' : 'text-[#6B6889]')}>
                       {isOut ? 'Out of stock' : `${item.qty} in stock`}
                     </span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openReceive(item) }}
-                      className="text-[12px] font-semibold text-[#6C63FF] bg-[#EEEDFF] rounded-lg px-3 py-1 inline-flex items-center gap-1 active:scale-95 transition-all"
-                    >
-                      <PackagePlus size={13} /> Receive
-                    </button>
+                    {canReceive && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openReceive(item) }}
+                        className="text-[12px] font-semibold text-[#6C63FF] bg-[#EEEDFF] rounded-lg px-3 py-1 inline-flex items-center gap-1 active:scale-95 transition-all"
+                      >
+                        <PackagePlus size={13} /> Receive
+                      </button>
+                    )}
                   </div>
                 </div>
-                {isEmployer && (
+                {canManage && (
                   <button
                     onClick={() => setDeleteTarget(item)}
                     aria-label={`Delete ${item.brand}`}
@@ -639,12 +669,54 @@ export default function StockPage() {
             helper="how many arrived in the shop"
           />
 
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Color (optional)"
+              placeholder="Black"
+              value={receiveColor}
+              onChange={(e) => setReceiveColor(e.target.value)}
+            />
+            <Input
+              label="Size (optional)"
+              placeholder="42"
+              value={receiveSize}
+              onChange={(e) => setReceiveSize(e.target.value)}
+            />
+          </div>
+
           {receiveQty && !isNaN(Number(receiveQty)) && Number(receiveQty) > 0 && (
             <div className="bg-[#EEEDFF] rounded-2xl px-4 py-3 text-[14px] text-[#1A1733]">
               New total:{' '}
               <span className="font-bold text-[#6C63FF]">
                 {(receiveTarget?.qty ?? 0) + Math.floor(Number(receiveQty))} pairs
               </span>
+            </div>
+          )}
+
+          {recentDeliveries.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[12px] font-bold text-[#6B6889] uppercase tracking-wider">
+                Recent deliveries
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {recentDeliveries.map((d) => (
+                  <div
+                    key={d.id}
+                    className="flex items-center justify-between bg-[#F7F6FF] rounded-xl px-3 py-2 text-[13px]"
+                  >
+                    <span className="text-[#1A1733] font-medium">
+                      +{d.qty}
+                      {[d.color, d.size ? `Sz ${d.size}` : null].filter(Boolean).length > 0 && (
+                        <span className="text-[#6B6889] font-normal">
+                          {' · '}
+                          {[d.color, d.size ? `Sz ${d.size}` : null].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[#B0ADCA]">{formatDateShort(d.date)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

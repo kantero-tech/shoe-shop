@@ -6,6 +6,7 @@ import { id } from '@instantdb/react'
 import { db } from '@/lib/db'
 import type { AppUser, UserRole } from '@/lib/schema'
 import { hashPin, setSession } from '@/lib/auth'
+import { readPermissions, DEFAULT_PERMISSIONS } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 
 // ── PIN pad ───────────────────────────────────────────────────────────────────
@@ -25,6 +26,20 @@ function PinDot({ filled }: { filled: boolean }) {
 
 function PinPad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
+
+  // Let desktop users type the PIN with the physical keyboard.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (/^[0-9]$/.test(e.key)) {
+        if (value.length < 4) onChange(value + e.key)
+      } else if (e.key === 'Backspace') {
+        e.preventDefault()
+        onChange(value.slice(0, -1))
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [value, onChange])
 
   return (
     <div className="w-full max-w-[280px] mx-auto">
@@ -95,9 +110,7 @@ function SetupScreen({ onCreated }: { onCreated: () => void }) {
           name: name.trim(),
           pin: hashed,
           role: 'employer' as UserRole,
-          canSell: true,
-          canViewStock: true,
-          canViewDebts: true,
+          ...DEFAULT_PERMISSIONS,
         })
       )
       onCreated()
@@ -207,11 +220,7 @@ function LoginScreen({
           userId: selected.id,
           name: selected.name,
           role: selected.role,
-          canSell: selected.canSell ?? true,
-          canViewStock: selected.canViewStock ?? true,
-          canViewDebts: selected.canViewDebts ?? true,
-          canViewSales: selected.canViewSales ?? true,
-          canViewExpenses: selected.canViewExpenses ?? true,
+          ...(selected.role === 'employer' ? DEFAULT_PERMISSIONS : readPermissions(selected)),
         })
         onLoggedIn()
       } else {

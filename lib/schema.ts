@@ -1,4 +1,5 @@
 import { i } from '@instantdb/react';
+import type { Permissions } from './permissions';
 
 const _schema = i.schema({
   entities: {
@@ -27,6 +28,14 @@ const _schema = i.schema({
       note: i.string(),
       stockItemId: i.string(),
     }),
+    deliveries: i.entity({
+      stockItemId: i.string(),
+      brand: i.string(),
+      qty: i.number(),
+      color: i.string(),
+      size: i.string(),
+      date: i.string(),
+    }),
     returns: i.entity({
       brand: i.string(),
       color: i.string(),
@@ -46,6 +55,13 @@ const _schema = i.schema({
       canViewDebts: i.boolean(),
       canViewSales: i.boolean(),
       canViewExpenses: i.boolean(),
+      canViewReports: i.boolean(),
+      canManageStock: i.boolean(),
+      canReceiveStock: i.boolean(),
+      canEditSales: i.boolean(),
+      canRecordPayments: i.boolean(),
+      canManageExpenses: i.boolean(),
+      canSeeCostPrices: i.boolean(),
     }),
     expenses: i.entity({
       amount: i.number(),
@@ -79,16 +95,11 @@ export type ExpenseCategory = 'Rent' | 'Stock Purchase' | 'Utilities' | 'Salary'
 
 export const DAILY_TARGET_SETTING_ID = 'mpenzi-daily-target';
 
-export interface AppUser {
+export interface AppUser extends Partial<Permissions> {
   id: string;
   name: string;
   pin: string;
   role: UserRole;
-  canSell: boolean;
-  canViewStock: boolean;
-  canViewDebts: boolean;
-  canViewSales: boolean;
-  canViewExpenses: boolean;
 }
 
 export interface StockItem {
@@ -119,6 +130,17 @@ export interface Sale {
   date?: string;
   stockItemId?: string;
   note?: string;
+}
+
+export interface Delivery {
+  id: string;
+  stockItemId: string;
+  /** Name of the shoe type at the time of delivery (snapshot of `brand`). */
+  brand?: string;
+  qty: number;
+  color?: string;
+  size?: string;
+  date: string;
 }
 
 export interface ReturnRecord {

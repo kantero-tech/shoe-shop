@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { useSession, useIsEmployer } from '@/lib/permissions-context'
+import { useSession, useIsEmployer, useCan } from '@/lib/permissions-context'
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -39,12 +39,13 @@ interface DebtCardProps {
   sale: Sale
   exitPhase?: ExitPhase
   expanded: boolean
+  canRecord: boolean
   onToggleExpand: () => void
   onConfirm: (saleId: string, amount: number) => Promise<void>
   onViewLedger: (customerName: string) => void
 }
 
-const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, expanded, onToggleExpand, onConfirm, onViewLedger }: DebtCardProps) {
+const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, expanded, canRecord, onToggleExpand, onConfirm, onViewLedger }: DebtCardProps) {
   const [inputValue, setInputValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
@@ -168,7 +169,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
         </div>
 
         {/* Record Payment button (collapsed state) */}
-        {!expanded && (
+        {!expanded && canRecord && (
           <button
             onClick={onToggleExpand}
             className={cn(
@@ -437,6 +438,7 @@ export default function DebtsPage() {
   const router = useRouter()
   const session = useSession()
   const isEmployer = useIsEmployer()
+  const canRecord = useCan('canRecordPayments')
 
   useEffect(() => {
     if (session && !isEmployer && !session.canViewDebts) {
@@ -617,6 +619,7 @@ export default function DebtsPage() {
                 sale={sale}
                 exitPhase={exitItems.get(sale.id)?.phase}
                 expanded={expandedId === sale.id}
+                canRecord={canRecord}
                 onToggleExpand={() => toggleExpand(sale.id)}
                 onConfirm={handleConfirm}
                 onViewLedger={setLedgerCustomer}
