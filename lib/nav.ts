@@ -6,6 +6,7 @@ import {
   CreditCard,
   Wallet,
   BarChart3,
+  Calculator,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -28,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/sales', label: 'Sales', Icon: ScrollText, permKey: 'canViewSales' },
   { href: '/debts', label: 'Debts', Icon: CreditCard, permKey: 'canViewDebts' },
   { href: '/expenses', label: 'Expenses', Icon: Wallet, permKey: 'canViewExpenses' },
+  { href: '/closeout', label: 'End of Day', Icon: Calculator, permKey: 'canViewSales' },
   { href: '/reports', label: 'Reports', Icon: BarChart3, permKey: 'canViewReports' },
 ]
 

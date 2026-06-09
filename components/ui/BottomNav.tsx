@@ -99,6 +99,27 @@ const MORE_ITEMS: MoreItem[] = [
     ),
   },
   {
+    href: '/closeout',
+    label: 'End of Day',
+    description: "Today's takings and cash in the till",
+    permKey: 'canViewSales',
+    color: '#0369A1',
+    bg: '#E0F2FE',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2" />
+        <line x1="8" y1="6" x2="16" y2="6" />
+        <line x1="8" y1="10" x2="8" y2="10" />
+        <line x1="12" y1="10" x2="12" y2="10" />
+        <line x1="16" y1="10" x2="16" y2="10" />
+        <line x1="8" y1="14" x2="8" y2="14" />
+        <line x1="12" y1="14" x2="12" y2="14" />
+        <line x1="16" y1="14" x2="16" y2="18" />
+        <line x1="8" y1="18" x2="12" y2="18" />
+      </svg>
+    ),
+  },
+  {
     href: '/reports',
     label: 'Reports',
     description: 'Revenue, profit, and analytics',
