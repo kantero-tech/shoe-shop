@@ -39,13 +39,9 @@ export const FOOTER_NAV: NavItem[] = [
 export function isNavItemVisible(item: NavItem, isEmployer: boolean, session: Session | null): boolean {
   if (item.employerOnly) return isEmployer
   if (isEmployer) return true
-  // Stock is reachable by anyone who can view, manage, or receive stock.
+  // Stock is reachable by anyone who can view stock or receive deliveries.
   if (item.href === '/stock') {
-    return (
-      (session?.canViewStock ?? true) ||
-      (session?.canManageStock ?? true) ||
-      (session?.canReceiveStock ?? true)
-    )
+    return (session?.canViewStock ?? true) || (session?.canReceiveStock ?? true)
   }
   if (item.permKey) return session?.[item.permKey] ?? true
   return true

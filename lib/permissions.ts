@@ -4,6 +4,8 @@
 // into the relevant page with `useCan`, and it automatically shows up as a
 // toggle on the Team screen and travels through the login session.
 
+// Note: registering/editing shoe types and the buy (cost) price are intentionally
+// NOT here — those are always owner-only (role-based), never granted to employees.
 export const PERMISSION_KEYS = [
   // Pages (open the screen)
   'canSell',
@@ -13,13 +15,10 @@ export const PERMISSION_KEYS = [
   'canViewExpenses',
   'canViewReports',
   // Actions (do things)
-  'canManageStock',
   'canReceiveStock',
   'canEditSales',
   'canRecordPayments',
   'canManageExpenses',
-  // Sensitive
-  'canSeeCostPrices',
 ] as const
 
 export type PermKey = (typeof PERMISSION_KEYS)[number]
@@ -42,15 +41,13 @@ export const PERMISSION_META: PermMeta[] = [
   { key: 'canViewDebts', label: 'Debts', description: 'See outstanding customer debts', group: 'Pages' },
   { key: 'canViewExpenses', label: 'Expenses', description: 'See business expense records', group: 'Pages' },
   { key: 'canViewReports', label: 'Reports', description: 'Open the Reports & analytics screen', group: 'Pages' },
-  { key: 'canManageStock', label: 'Manage shoe types', description: 'Register, edit, or delete shoe types', group: 'Actions' },
   { key: 'canReceiveStock', label: 'Receive deliveries', description: 'Record pairs that arrive in the shop', group: 'Actions' },
   { key: 'canEditSales', label: 'Edit / delete sales', description: 'Change or remove a recorded sale', group: 'Actions' },
   { key: 'canRecordPayments', label: 'Record debt payments', description: 'Collect and record repayments on debts', group: 'Actions' },
   { key: 'canManageExpenses', label: 'Add / delete expenses', description: 'Record or remove business expenses', group: 'Actions' },
-  { key: 'canSeeCostPrices', label: 'See cost & profit', description: 'View wholesale buy prices and profit figures', group: 'Sensitive' },
 ]
 
-export const PERM_GROUPS: PermGroup[] = ['Pages', 'Actions', 'Sensitive']
+export const PERM_GROUPS: PermGroup[] = ['Pages', 'Actions']
 
 /** All permissions granted — used for employer accounts and as the default for new employees. */
 export const DEFAULT_PERMISSIONS: Permissions = PERMISSION_KEYS.reduce(

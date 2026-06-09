@@ -13,7 +13,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { DataTable, type Column } from '@/components/ui/DataTable'
 import { cn, formatRWF, formatDateShort } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { useSession, useCan, useCanAny } from '@/lib/permissions-context'
+import { useSession, useIsEmployer, useCan, useCanAny } from '@/lib/permissions-context'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -61,10 +61,12 @@ function EmptyState({ canAdd, onAdd }: { canAdd: boolean; onAdd: () => void }) {
 export default function StockPage() {
   const router = useRouter()
   const session = useSession()
-  const canManage = useCan('canManageStock')
+  // Registering shoe types and the buy price are always owner-only.
+  const isEmployer = useIsEmployer()
+  const canManage = isEmployer
+  const canSeeCost = isEmployer
   const canReceive = useCan('canReceiveStock')
-  const canSeeCost = useCan('canSeeCostPrices')
-  const canOpen = useCanAny(['canViewStock', 'canManageStock', 'canReceiveStock'])
+  const canOpen = useCanAny(['canViewStock', 'canReceiveStock'])
 
   useEffect(() => {
     if (session && !canOpen) {

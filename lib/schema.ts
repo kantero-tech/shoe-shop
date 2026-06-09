@@ -56,12 +56,10 @@ const _schema = i.schema({
       canViewSales: i.boolean(),
       canViewExpenses: i.boolean(),
       canViewReports: i.boolean(),
-      canManageStock: i.boolean(),
       canReceiveStock: i.boolean(),
       canEditSales: i.boolean(),
       canRecordPayments: i.boolean(),
       canManageExpenses: i.boolean(),
-      canSeeCostPrices: i.boolean(),
     }),
     expenses: i.entity({
       amount: i.number(),

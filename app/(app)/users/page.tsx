@@ -6,7 +6,7 @@ import { id } from '@instantdb/react'
 import {
   Trash2, Plus, X, ChevronRight, ShieldCheck,
   Tag, Package, ScrollText, CreditCard, Wallet, BarChart3,
-  Boxes, PackagePlus, Pencil, HandCoins, Receipt, Eye,
+  PackagePlus, Pencil, HandCoins, Receipt,
   type LucideIcon,
 } from 'lucide-react'
 import { db } from '@/lib/db'
@@ -40,12 +40,10 @@ const PERM_ICONS: Record<PermKey, LucideIcon> = {
   canViewDebts: CreditCard,
   canViewExpenses: Wallet,
   canViewReports: BarChart3,
-  canManageStock: Boxes,
   canReceiveStock: PackagePlus,
   canEditSales: Pencil,
   canRecordPayments: HandCoins,
   canManageExpenses: Receipt,
-  canSeeCostPrices: Eye,
 }
 
 const GROUP_STYLE: Record<PermGroup, { color: string; bg: string }> = {

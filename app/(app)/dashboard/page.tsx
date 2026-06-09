@@ -11,7 +11,7 @@ import { DAILY_TARGET_SETTING_ID } from '@/lib/schema'
 import { filterByPeriod, formatRWF, formatDateShort, formatCount } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { clearSession } from '@/lib/auth'
-import { useSession, useIsEmployer, useCan } from '@/lib/permissions-context'
+import { useSession, useIsEmployer } from '@/lib/permissions-context'
 import { useTheme } from '@/lib/theme-context'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
@@ -108,7 +108,6 @@ export default function DashboardPage() {
   const router = useRouter()
   const session = useSession()
   const isEmployer = useIsEmployer()
-  const canSeeCost = useCan('canSeeCostPrices')
   const { theme, toggle: toggleTheme } = useTheme()
   const [period, setPeriod] = useState<Period>('This Month')
   const [editingTarget, setEditingTarget] = useState(false)
@@ -314,7 +313,7 @@ export default function DashboardPage() {
             <StatCard label="Revenue" value={formatRWF(revenue)} color="green" />
             <StatCard label="Expenses" value={formatRWF(totalExpenses)} color="orange" />
             <StatCard label="Collected" value={formatRWF(collected)} color="blue" />
-            {canSeeCost && (
+            {isEmployer && (
               <StatCard
                 label="Net Profit"
                 value={formatRWF(netProfit)}
