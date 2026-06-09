@@ -16,7 +16,7 @@ export function Input({ label, error, helper, className, id, ...props }: InputPr
       {label && (
         <label
           htmlFor={inputId}
-          className="text-[15px] font-medium text-[#1C1C1E] pl-1"
+          className="text-[14px] font-semibold text-[#1A1733] pl-1"
         >
           {label}
         </label>
@@ -25,21 +25,25 @@ export function Input({ label, error, helper, className, id, ...props }: InputPr
         id={inputId}
         className={cn(
           'w-full min-h-[44px] px-4 py-3',
-          'bg-[#F2F2F7] rounded-[12px]',
-          'text-[17px] text-[#1C1C1E] placeholder:text-[#8E8E93]',
-          'border-0 outline-none ring-0',
-          'transition-all duration-200',
-          'focus:bg-[#E5E5EA] focus:ring-2 focus:ring-[#007AFF] focus:ring-offset-0',
-          error && 'ring-2 ring-[#FF3B30] bg-[#FFE9E8]',
+          'rounded-[12px]',
+          'text-[16px] outline-none ring-0',
+          'border transition-all duration-200',
+          'focus:border-[#6C63FF] focus:ring-2 focus:ring-[#6C63FF]/20',
+          error && 'border-[#FF3D5A] focus:ring-[#FF3D5A]/20',
           className
         )}
+        style={{
+          background: error ? 'var(--color-red-light, #FFE5EB)' : 'var(--color-fill)',
+          borderColor: error ? '#FF3D5A' : 'var(--color-border)',
+          color: 'var(--color-text)',
+        }}
         {...props}
       />
       {error && (
-        <p className="text-[13px] text-[#FF3B30] pl-1">{error}</p>
+        <p className="text-[13px] text-[#FF3D5A] pl-1">{error}</p>
       )}
       {helper && !error && (
-        <p className="text-[13px] text-[#8E8E93] pl-1">{helper}</p>
+        <p className="text-[13px] text-[#6B6889] pl-1">{helper}</p>
       )}
     </div>
   )

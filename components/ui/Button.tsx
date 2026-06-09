@@ -11,10 +11,23 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-[#007AFF] text-white active:bg-[#0062CC] shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
-  secondary: 'bg-[#F2F2F7] text-[#007AFF] active:bg-[#E5E5EA]',
-  danger: 'bg-[#FF3B30] text-white active:bg-[#D93025] shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
-  ghost: 'bg-transparent text-[#007AFF] active:bg-[#F2F2F7]',
+  primary: 'text-white active:opacity-90',
+  secondary: 'bg-[#EEEDFF] text-[#6C63FF] active:bg-[#E0DEFF]',
+  danger: 'text-white active:opacity-90',
+  ghost: 'bg-transparent text-[#6C63FF] active:bg-[#EEEDFF]',
+}
+
+const variantInlineStyle: Record<ButtonVariant, React.CSSProperties> = {
+  primary: {
+    background: 'linear-gradient(135deg, #6C63FF 0%, #8B5CF6 100%)',
+    boxShadow: '0 4px 14px rgba(108, 99, 255, 0.35)',
+  },
+  secondary: {},
+  danger: {
+    background: 'linear-gradient(135deg, #FF3D5A 0%, #FF6B8A 100%)',
+    boxShadow: '0 4px 14px rgba(255, 61, 90, 0.30)',
+  },
+  ghost: {},
 }
 
 export function Button({
@@ -23,6 +36,7 @@ export function Button({
   fullWidth = false,
   disabled,
   className,
+  style,
   children,
   ...props
 }: ButtonProps) {
@@ -31,10 +45,11 @@ export function Button({
   return (
     <button
       disabled={isDisabled}
+      style={{ ...variantInlineStyle[variant], ...style }}
       className={cn(
         'inline-flex items-center justify-center gap-2',
         'h-11 px-5 rounded-[14px]',
-        'text-[17px] font-semibold',
+        'text-[16px] font-semibold',
         'transition-all duration-200 ease-out',
         'active:scale-[0.96]',
         'select-none',

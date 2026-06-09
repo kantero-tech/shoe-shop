@@ -1,14 +1,17 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import { Search, X, Share2, BookOpen } from 'lucide-react'
 import { db } from '@/lib/db'
 import type { Sale } from '@/lib/schema'
 import { formatRWF, cn, formatCount } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useSession, useIsEmployer } from '@/lib/permissions-context'
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -38,9 +41,10 @@ interface DebtCardProps {
   expanded: boolean
   onToggleExpand: () => void
   onConfirm: (saleId: string, amount: number) => Promise<void>
+  onViewLedger: (customerName: string) => void
 }
 
-const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, expanded, onToggleExpand, onConfirm }: DebtCardProps) {
+const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, expanded, onToggleExpand, onConfirm, onViewLedger }: DebtCardProps) {
   const [inputValue, setInputValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
@@ -76,7 +80,6 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
   }
 
   return (
-    // Outer wrapper handles the exit slide-out animation
     <div
       style={{
         maxHeight: isCollapsing ? 0 : isExiting ? 1200 : undefined,
@@ -91,16 +94,37 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
         padding="md"
         className={cn(
           'transition-colors duration-500',
-          exitPhase === 'flash' && 'bg-[#E3F9EA]'
+          exitPhase === 'flash' && 'bg-[#DFFBEF]'
         )}
       >
-        {/* Customer name */}
-        <p className="text-[20px] font-bold text-[#1C1C1E] leading-tight">
-          {sale.customerName?.trim() || 'Unknown Customer'}
-        </p>
+        {/* Customer name + ledger button */}
+        <div className="flex items-center justify-between gap-2 mb-0">
+          <p className="text-[19px] font-bold text-[#1A1733] leading-tight">
+            {sale.customerName?.trim() || 'Unknown Customer'}
+          </p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => onViewLedger(sale.customerName?.trim() || 'Unknown Customer')}
+              className="w-8 h-8 rounded-lg bg-[#EEEDFF] flex items-center justify-center active:scale-90 transition-all"
+              title="View all transactions"
+            >
+              <BookOpen size={14} className="text-[#6C63FF]" />
+            </button>
+            <button
+              onClick={() => {
+                const msg = `Hello ${sale.customerName?.trim() || ''}, this is a reminder from Mpenzi Shoes. You owe ${formatRWF(owes)} for ${[sale.brand, sale.color ? `(${sale.color})` : null].filter(Boolean).join(' ')}. Kindly arrange payment. Thank you!`
+                window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+              }}
+              className="w-8 h-8 rounded-lg bg-[#E6FFF0] flex items-center justify-center active:scale-90 transition-all"
+              title="Send WhatsApp reminder"
+            >
+              <Share2 size={14} className="text-[#25D366]" />
+            </button>
+          </div>
+        </div>
 
         {/* Shoe info line */}
-        <p className="text-[13px] text-[#8E8E93] mt-1 mb-3 leading-snug">
+        <p className="text-[13px] text-[#6B6889] mt-1 mb-3 leading-snug">
           {[sale.brand, sale.color ? `(${sale.color})` : null].filter(Boolean).join(' ')}
           {sale.size ? ` · Size ${sale.size}` : ''}
           {sale.date ? ` · ${formatSaleDate(sale.date)}` : ''}
@@ -115,28 +139,31 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
 
         {/* Progress bar */}
         <div className="mb-4">
-          <div className="h-1.5 w-full rounded-full bg-[#E5E5EA] overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-[#E8E6F5] overflow-hidden">
             <div
-              className="h-full rounded-full bg-[#007AFF] transition-all duration-700 ease-out"
-              style={{ width: `${pct}%` }}
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{
+                width: `${pct}%`,
+                background: 'linear-gradient(90deg, #6C63FF, #8B5CF6)',
+              }}
             />
           </div>
-          <p className="text-[11px] text-[#8E8E93] mt-1">{Math.round(pct)}% paid</p>
+          <p className="text-[11px] text-[#6B6889] mt-1">{Math.round(pct)}% paid</p>
         </div>
 
         {/* Paid / Owes amounts */}
         <div className="flex gap-6 mb-4">
           <div>
-            <p className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wide mb-0.5">
+            <p className="text-[11px] font-bold text-[#6B6889] uppercase tracking-wide mb-0.5">
               Paid
             </p>
-            <p className="text-[16px] font-semibold text-[#34C759]">{formatRWF(amountPaid)}</p>
+            <p className="text-[16px] font-semibold text-[#00C26F]">{formatRWF(amountPaid)}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wide mb-0.5">
+            <p className="text-[11px] font-bold text-[#6B6889] uppercase tracking-wide mb-0.5">
               Owes
             </p>
-            <p className="text-[16px] font-bold text-[#FF9500]">{formatRWF(owes)}</p>
+            <p className="text-[16px] font-bold text-[#FFB020]">{formatRWF(owes)}</p>
           </div>
         </div>
 
@@ -146,10 +173,10 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
             onClick={onToggleExpand}
             className={cn(
               'w-full h-[44px] rounded-xl',
-              'border-2 border-[#007AFF] text-[#007AFF]',
+              'border-2 border-[#6C63FF] text-[#6C63FF]',
               'text-[15px] font-semibold',
               'transition-all duration-200',
-              'active:scale-[0.97] active:bg-[#E3F0FF]',
+              'active:scale-[0.97] active:bg-[#EEEDFF]',
               'select-none'
             )}
           >
@@ -157,7 +184,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
           </button>
         )}
 
-        {/* Inline payment form — grid-rows trick for smooth expand */}
+        {/* Inline payment form */}
         <div
           className="overflow-hidden"
           style={{
@@ -167,7 +194,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
           }}
         >
           <div className="min-h-0">
-            <div className="pt-4 border-t border-[#F2F2F7] flex flex-col gap-3">
+            <div className="pt-4 border-t border-[#F5F4FF] flex flex-col gap-3">
               <Input
                 label="Amount received (RWF)"
                 type="number"
@@ -188,7 +215,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
                 disabled={submitting}
                 className={cn(
                   'flex items-center gap-1.5 text-left',
-                  'text-[14px] font-semibold text-[#34C759]',
+                  'text-[14px] font-semibold text-[#00C26F]',
                   'transition-opacity active:opacity-60',
                   submitting && 'opacity-40 pointer-events-none'
                 )}
@@ -215,7 +242,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
                     onToggleExpand()
                   }}
                   disabled={submitting}
-                  className="shrink-0 text-[15px] font-medium text-[#8E8E93] px-1"
+                  className="shrink-0 text-[15px] font-medium text-[#6B6889] px-1"
                 >
                   Cancel
                 </button>
@@ -231,7 +258,7 @@ const DebtCard = /*#__PURE__*/ React.memo(function DebtCard({ sale, exitPhase, e
 // ─── skeleton ────────────────────────────────────────────────────────────────
 
 function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse bg-[#E5E5EA] rounded-2xl', className)} />
+  return <div className={cn('animate-pulse bg-[#E8E6F5] rounded-2xl', className)} />
 }
 
 // ─── empty state ─────────────────────────────────────────────────────────────
@@ -239,13 +266,13 @@ function Skeleton({ className }: { className?: string }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4">
-      <div className="w-20 h-20 rounded-full bg-[#E3F9EA] flex items-center justify-center mb-5">
+      <div className="w-20 h-20 rounded-full bg-[#DFFBEF] flex items-center justify-center mb-5">
         <svg
           width="36"
           height="36"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#34C759"
+          stroke="#00C26F"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -253,8 +280,8 @@ function EmptyState() {
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
-      <p className="text-[22px] font-bold text-[#1C1C1E] mb-1">No outstanding debts!</p>
-      <p className="text-[15px] text-[#8E8E93]">Great job!</p>
+      <p className="text-[22px] font-bold text-[#1A1733] mb-1">No outstanding debts!</p>
+      <p className="text-[15px] text-[#6B6889]">Great job — you&apos;re all clear.</p>
     </div>
   )
 }
@@ -272,8 +299,8 @@ function SummaryCard({
 }) {
   return (
     <Card className="flex flex-col gap-1.5">
-      <p className="text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">{label}</p>
-      <p className="text-[26px] font-bold leading-tight" style={{ color: valueColor }}>
+      <p className="text-[11px] font-bold text-[#6B6889] uppercase tracking-widest">{label}</p>
+      <p className="text-[24px] font-extrabold leading-tight" style={{ color: valueColor }}>
         {value}
       </p>
     </Card>
@@ -289,7 +316,7 @@ function CheckIcon() {
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#34C759"
+      stroke="#00C26F"
       strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -300,13 +327,131 @@ function CheckIcon() {
   )
 }
 
+// ─── CustomerLedgerSheet ──────────────────────────────────────────────────────
+
+function CustomerLedgerSheet({
+  customerName,
+  allSales,
+  onClose,
+}: {
+  customerName: string | null
+  allSales: Sale[]
+  onClose: () => void
+}) {
+  const open = customerName !== null
+  const customerSales = useMemo(() => {
+    if (!customerName) return []
+    return allSales
+      .filter((s) => (s.customerName?.trim() || 'Unknown Customer') === customerName)
+      .sort((a, b) => new Date(b.date ?? '').getTime() - new Date(a.date ?? '').getTime())
+  }, [customerName, allSales])
+
+  const totalOwed = useMemo(() =>
+    customerSales.reduce((acc, s) => acc + Math.max(0, (s.totalAmount ?? 0) - (s.amountPaid ?? 0)), 0),
+    [customerSales]
+  )
+  const totalPaid = useMemo(() =>
+    customerSales.reduce((acc, s) => acc + (s.amountPaid ?? 0), 0),
+    [customerSales]
+  )
+
+  return (
+    <>
+      <div
+        aria-hidden
+        className={cn('fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300', open ? 'opacity-100' : 'opacity-0 pointer-events-none')}
+        onClick={onClose}
+      />
+      <div
+        className={cn('fixed bottom-0 z-[70] bg-white rounded-t-3xl transition-transform duration-300 ease-out', open ? 'translate-y-0' : 'translate-y-full')}
+        style={{ left: 'max(0px, calc(50% - 240px))', right: 'max(0px, calc(50% - 240px))' }}
+      >
+        <div className="flex justify-center pt-3"><div className="w-10 h-1 rounded-full bg-[#E8E6F5]" /></div>
+        <div className="flex items-center justify-between px-5 pt-3 pb-3">
+          <div>
+            <h2 className="text-[18px] font-bold text-[#1A1733]">{customerName ?? ''}</h2>
+            <p className="text-[12px] text-[#6B6889]">{customerSales.length} transaction{customerSales.length !== 1 ? 's' : ''}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F5F4FF] flex items-center justify-center">
+            <X size={15} className="text-[#6B6889]" />
+          </button>
+        </div>
+
+        {/* Summary strip */}
+        <div className="flex gap-3 px-5 pb-3">
+          <div className="flex-1 bg-[#DFFBEF] rounded-xl px-3 py-2">
+            <p className="text-[11px] font-bold text-[#6B6889] uppercase tracking-wide">Total Paid</p>
+            <p className="text-[16px] font-bold text-[#00C26F]">{formatRWF(totalPaid)}</p>
+          </div>
+          <div className="flex-1 bg-[#FFF4DB] rounded-xl px-3 py-2">
+            <p className="text-[11px] font-bold text-[#6B6889] uppercase tracking-wide">Still Owes</p>
+            <p className="text-[16px] font-bold text-[#FFB020]">{formatRWF(totalOwed)}</p>
+          </div>
+        </div>
+
+        {/* WhatsApp reminder */}
+        {totalOwed > 0 && (
+          <div className="px-5 pb-3">
+            <button
+              onClick={() => {
+                const msg = `Hello ${customerName ?? 'Customer'}, this is a reminder from Mpenzi Shoes. You have an outstanding balance of ${formatRWF(totalOwed)}. Kindly arrange payment at your earliest convenience. Thank you!`
+                window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#25D366] text-white text-[14px] font-semibold active:scale-95 transition-all"
+            >
+              <Share2 size={15} /> Send WhatsApp Reminder
+            </button>
+          </div>
+        )}
+
+        {/* Sales list */}
+        <div className="overflow-y-auto max-h-[45vh] px-5 pb-10 flex flex-col gap-2">
+          {customerSales.map((s) => {
+            const owes = Math.max(0, (s.totalAmount ?? 0) - (s.amountPaid ?? 0))
+            return (
+              <div key={s.id} className="flex items-center gap-3 py-2.5 border-b border-[#F5F4FF] last:border-0">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.isPaid ? '#00C26F' : '#FF3D5A' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-[#1A1733] truncate">
+                    {[s.brand, s.color ? `(${s.color})` : null].filter(Boolean).join(' ')}
+                    {s.size ? ` · Sz ${s.size}` : ''}
+                  </p>
+                  <p className="text-[11px] text-[#6B6889]">{formatSaleDate(s.date)}</p>
+                </div>
+                <div className="flex flex-col items-end shrink-0">
+                  <p className="text-[13px] font-bold text-[#1A1733]">{formatRWF(s.totalAmount ?? 0)}</p>
+                  {!s.isPaid && owes > 0 && <p className="text-[11px] text-[#FF3D5A]">-{formatRWF(owes)}</p>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ─── page ────────────────────────────────────────────────────────────────────
 
 export default function DebtsPage() {
+  const router = useRouter()
+  const session = useSession()
+  const isEmployer = useIsEmployer()
+
+  useEffect(() => {
+    if (session && !isEmployer && !session.canViewDebts) {
+      router.replace('/dashboard')
+    }
+  }, [session, isEmployer, router])
+
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [exitItems, setExitItems] = useState<Map<string, ExitItem>>(new Map())
+  const [search, setSearch] = useState('')
+  const [ledgerCustomer, setLedgerCustomer] = useState<string | null>(null)
 
   const { data, isLoading } = db.useQuery({ sales: {} })
+
+  const allSalesForLedger = useMemo(() => (data?.sales ?? []) as Sale[], [data?.sales])
 
   const debtSales = useMemo(
     () =>
@@ -319,18 +464,27 @@ export default function DebtsPage() {
     [data?.sales]
   )
 
-  // Merge live debts + items currently animating out (sorted newest first)
   const displaySales = useMemo(() => {
     const allMap = new Map<string, Sale>()
     for (const s of debtSales) allMap.set(s.id, s)
     for (const [id, { sale }] of exitItems) {
       if (!allMap.has(id)) allMap.set(id, sale)
     }
-    return [...allMap.values()].sort(
+    let result = [...allMap.values()].sort(
       (a, b) =>
         new Date(b.date ?? '').getTime() - new Date(a.date ?? '').getTime()
     )
-  }, [debtSales, exitItems])
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter(
+        (s) =>
+          s.customerName?.toLowerCase().includes(q) ||
+          s.brand?.toLowerCase().includes(q) ||
+          s.color?.toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [debtSales, exitItems, search])
 
   const totalOutstanding = useMemo(
     () =>
@@ -341,11 +495,9 @@ export default function DebtsPage() {
     [debtSales]
   )
 
-  // Kick off green-flash → collapse → remove animation sequence
   const triggerExit = useCallback((sale: Sale) => {
     setExitItems((prev) => new Map(prev).set(sale.id, { sale, phase: 'flash' }))
 
-    // Switch to collapse after flash settles
     setTimeout(() => {
       setExitItems((prev) => {
         const next = new Map(prev)
@@ -355,7 +507,6 @@ export default function DebtsPage() {
       })
     }, 450)
 
-    // Remove from DOM after collapse finishes
     setTimeout(() => {
       setExitItems((prev) => {
         const next = new Map(prev)
@@ -377,7 +528,6 @@ export default function DebtsPage() {
       const willBePaid = newAmountPaid >= (sale.totalAmount ?? 0)
 
       if (willBePaid) {
-        // Start exit animation before transact so it's visible even with optimistic update
         triggerExit({ ...sale, amountPaid: newAmountPaid, isPaid: true })
         setExpandedId(null)
       }
@@ -400,7 +550,7 @@ export default function DebtsPage() {
   )
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-bg)' }}>
+    <div className="min-h-screen page-content" style={{ background: 'var(--color-bg)' }}>
       <PageHeader
         title="Debts"
         action={
@@ -412,31 +562,47 @@ export default function DebtsPage() {
         }
       />
 
-      <div className="px-4 flex flex-col gap-4">
+      {/* Search */}
+      <div className="px-4 lg:px-8 pb-3">
+        <div className="flex items-center gap-2 bg-white border border-[#E8E6F5] rounded-[12px] px-3 h-10 shadow-[0_1px_4px_rgba(108,99,255,0.06)] lg:max-w-md">
+          <Search size={15} className="text-[#6B6889] shrink-0" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search customer or brand…"
+            className="flex-1 bg-transparent text-[15px] text-[#1A1733] placeholder:text-[#B0ADCA] outline-none"
+          />
+          {search && (
+            <button onClick={() => setSearch('')}><X size={14} className="text-[#6B6889]" /></button>
+          )}
+        </div>
+      </div>
+
+      <div className="px-4 lg:px-8 flex flex-col gap-4">
         {/* Summary stats */}
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 lg:max-w-2xl">
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 lg:max-w-2xl">
             <SummaryCard
               label="Outstanding"
               value={formatRWF(totalOutstanding)}
-              valueColor="#FF9500"
+              valueColor="#FFB020"
             />
             <SummaryCard
               label="Debtors"
               value={formatCount(debtSales.length)}
-              valueColor="#007AFF"
+              valueColor="#6C63FF"
             />
           </div>
         )}
 
         {/* Debt cards */}
         {isLoading ? (
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-56" />
             ))}
@@ -444,7 +610,7 @@ export default function DebtsPage() {
         ) : displaySales.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 items-start">
             {displaySales.map((sale) => (
               <DebtCard
                 key={sale.id}
@@ -453,13 +619,19 @@ export default function DebtsPage() {
                 expanded={expandedId === sale.id}
                 onToggleExpand={() => toggleExpand(sale.id)}
                 onConfirm={handleConfirm}
+                onViewLedger={setLedgerCustomer}
               />
             ))}
           </div>
         )}
 
-        <div className="h-4" />
       </div>
+
+      <CustomerLedgerSheet
+        customerName={ledgerCustomer}
+        allSales={allSalesForLedger}
+        onClose={() => setLedgerCustomer(null)}
+      />
     </div>
   )
 }

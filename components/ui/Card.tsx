@@ -21,8 +21,9 @@ export function Card({ children, className, padding = 'md', onClick }: CardProps
     <Tag
       onClick={onClick}
       className={cn(
-        'bg-white rounded-2xl w-full text-left',
-        'shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]',
+        'rounded-2xl w-full text-left',
+        'border',
+        'shadow-[var(--shadow-card)]',
         onClick && [
           'cursor-pointer active:scale-[0.98] active:opacity-80',
           'transition-all duration-200 ease-out',
@@ -30,6 +31,11 @@ export function Card({ children, className, padding = 'md', onClick }: CardProps
         paddingMap[padding],
         className
       )}
+      style={{
+        background: 'var(--color-surface)',
+        borderColor: 'var(--color-border)',
+        color: 'var(--color-text)',
+      }}
     >
       {children}
     </Tag>

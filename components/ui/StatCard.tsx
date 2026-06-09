@@ -13,12 +13,12 @@ interface StatCardProps {
 }
 
 const colorMap: Record<StatCardColor, { value: string; bg: string; dot: string }> = {
-  default: { value: 'text-[#1C1C1E]', bg: '', dot: 'bg-[#8E8E93]' },
-  blue: { value: 'text-[#007AFF]', bg: 'bg-[#E3F0FF]', dot: 'bg-[#007AFF]' },
-  green: { value: 'text-[#34C759]', bg: 'bg-[#E3F9EA]', dot: 'bg-[#34C759]' },
-  red: { value: 'text-[#FF3B30]', bg: 'bg-[#FFE9E8]', dot: 'bg-[#FF3B30]' },
-  orange: { value: 'text-[#FF9500]', bg: 'bg-[#FFF4E3]', dot: 'bg-[#FF9500]' },
-  purple: { value: 'text-[#AF52DE]', bg: 'bg-[#F4E8FF]', dot: 'bg-[#AF52DE]' },
+  default: { value: 'text-[#1A1733]', bg: '', dot: 'bg-[#6B6889]' },
+  blue: { value: 'text-[#6C63FF]', bg: 'bg-[#EEEDFF]', dot: 'bg-[#6C63FF]' },
+  green: { value: 'text-[#00C26F]', bg: 'bg-[#DFFBEF]', dot: 'bg-[#00C26F]' },
+  red: { value: 'text-[#FF3D5A]', bg: 'bg-[#FFE5EB]', dot: 'bg-[#FF3D5A]' },
+  orange: { value: 'text-[#FFB020]', bg: 'bg-[#FFF4DB]', dot: 'bg-[#FFB020]' },
+  purple: { value: 'text-[#7C3AED]', bg: 'bg-[#EDE9FF]', dot: 'bg-[#7C3AED]' },
 }
 
 export function StatCard({
@@ -33,24 +33,24 @@ export function StatCard({
   const trendPositive = trend !== undefined && trend >= 0
 
   return (
-    <Card className={cn('flex flex-col gap-1', className)}>
-      <p className="text-[13px] font-medium text-[#8E8E93] uppercase tracking-wide leading-none">
+    <Card className={cn('flex flex-col gap-1', styles.bg, className)}>
+      <p className="text-[11px] font-bold text-[#6B6889] uppercase tracking-widest leading-none">
         {label}
       </p>
-      <p className={cn('text-[28px] font-bold leading-tight', styles.value)}>{value}</p>
+      <p className={cn('text-[26px] font-extrabold leading-tight', styles.value)}>{value}</p>
       <div className="flex items-center gap-2 mt-0.5">
         {trend !== undefined && (
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 text-[13px] font-semibold',
-              trendPositive ? 'text-[#34C759]' : 'text-[#FF3B30]'
+              'inline-flex items-center gap-0.5 text-[12px] font-bold',
+              trendPositive ? 'text-[#00C26F]' : 'text-[#FF3D5A]'
             )}
           >
             {trendPositive ? '▲' : '▼'} {Math.abs(trend)}%
           </span>
         )}
         {subLabel && (
-          <span className="text-[13px] text-[#8E8E93]">{subLabel}</span>
+          <span className="text-[12px] text-[#6B6889]">{subLabel}</span>
         )}
       </div>
     </Card>

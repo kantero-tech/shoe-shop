@@ -32,7 +32,7 @@ export function Select({
       {label && (
         <label
           htmlFor={selectId}
-          className="text-[15px] font-medium text-[#1C1C1E] pl-1"
+          className="text-[14px] font-semibold text-[#1A1733] pl-1"
         >
           {label}
         </label>
@@ -42,12 +42,12 @@ export function Select({
           id={selectId}
           className={cn(
             'w-full min-h-[44px] px-4 py-3 pr-10 appearance-none',
-            'bg-[#F2F2F7] rounded-[12px]',
-            'text-[17px] text-[#1C1C1E]',
-            'border-0 outline-none ring-0',
+            'bg-[#F5F4FF] rounded-[12px]',
+            'text-[16px] text-[#1A1733]',
+            'border border-[#E8E6F5] outline-none ring-0',
             'transition-all duration-200',
-            'focus:bg-[#E5E5EA] focus:ring-2 focus:ring-[#007AFF]',
-            error && 'ring-2 ring-[#FF3B30] bg-[#FFE9E8]',
+            'focus:bg-white focus:border-[#6C63FF] focus:ring-2 focus:ring-[#6C63FF]/20',
+            error && 'border-[#FF3D5A] bg-[#FFE5EB]',
             className
           )}
           {...props}
@@ -69,7 +69,7 @@ export function Select({
             height="16"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#8E8E93"
+            stroke="#6B6889"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -78,8 +78,8 @@ export function Select({
           </svg>
         </div>
       </div>
-      {error && <p className="text-[13px] text-[#FF3B30] pl-1">{error}</p>}
-      {helper && !error && <p className="text-[13px] text-[#8E8E93] pl-1">{helper}</p>}
+      {error && <p className="text-[13px] text-[#FF3D5A] pl-1">{error}</p>}
+      {helper && !error && <p className="text-[13px] text-[#6B6889] pl-1">{helper}</p>}
     </div>
   )
 }

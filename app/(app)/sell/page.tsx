@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { id } from '@instantdb/react'
 import {
@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { cn, formatRWF, formatCount } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useSession, useIsEmployer } from '@/lib/permissions-context'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ function SegmentedControl({
   onChange: (v: string) => void
 }) {
   return (
-    <div className="flex bg-[#E5E5EA] rounded-[14px] p-1">
+    <div className="flex bg-[#EEEDFF] rounded-[14px] p-1">
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -57,8 +58,8 @@ function SegmentedControl({
             'flex-1 py-2 rounded-[10px] text-[15px] font-semibold select-none',
             'transition-all duration-200 active:scale-[0.98]',
             value === opt.value
-              ? 'bg-white text-[#1C1C1E] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
-              : 'text-[#8E8E93]'
+              ? 'bg-white text-[#1A1733] shadow-[0_1px_4px_rgba(108,99,255,0.15)]'
+              : 'text-[#6B6889]'
           )}
         >
           {opt.label}
@@ -81,8 +82,8 @@ function QtyStep({
   const atMax = max !== undefined && value >= max
 
   return (
-    <div className="flex items-center justify-between bg-white rounded-2xl px-4 h-[56px] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]">
-      <span className="text-[17px] font-medium text-[#1C1C1E]">Quantity</span>
+    <div className="flex items-center justify-between bg-white rounded-2xl px-4 h-[56px] border border-[#F0EEFF] shadow-[0_2px_8px_rgba(108,99,255,0.07)]">
+      <span className="text-[16px] font-medium text-[#1A1733]">Quantity</span>
       <div className="flex items-center gap-4">
         <button
           onClick={() => !atMin && onChange(value - 1)}
@@ -91,13 +92,13 @@ function QtyStep({
           className={cn(
             'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150',
             atMin
-              ? 'bg-[#F2F2F7] text-[#C7C7CC]'
-              : 'bg-[#E3F0FF] text-[#007AFF] active:scale-90'
+              ? 'bg-[#E8E6F5] text-[#B0ADCA]'
+              : 'bg-[#EEEDFF] text-[#6C63FF] active:scale-90'
           )}
         >
           <Minus size={16} strokeWidth={2.5} />
         </button>
-        <span className="text-[22px] font-bold text-[#1C1C1E] w-7 text-center tabular-nums">
+        <span className="text-[22px] font-bold text-[#1A1733] w-7 text-center tabular-nums">
           {value}
         </span>
         <button
@@ -107,8 +108,8 @@ function QtyStep({
           className={cn(
             'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150',
             atMax
-              ? 'bg-[#F2F2F7] text-[#C7C7CC]'
-              : 'bg-[#E3F0FF] text-[#007AFF] active:scale-90'
+              ? 'bg-[#E8E6F5] text-[#B0ADCA]'
+              : 'bg-[#EEEDFF] text-[#6C63FF] active:scale-90'
           )}
         >
           <Plus size={16} strokeWidth={2.5} />
@@ -127,7 +128,7 @@ function PaymentMethodPicker({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-[15px] font-medium text-[#1C1C1E] pl-1">Payment Method</label>
+      <label className="text-[14px] font-semibold text-[#1A1733] pl-1">Payment Method</label>
       <div className="flex gap-2">
         {PAYMENT_METHODS.map(({ value: v, label, Icon }) => {
           const active = value === v
@@ -140,9 +141,12 @@ function PaymentMethodPicker({
                 'text-[13px] font-semibold select-none',
                 'transition-all duration-200 active:scale-[0.96]',
                 active
-                  ? 'bg-[#007AFF] text-white shadow-[0_1px_2px_rgba(0,0,0,0.12)]'
-                  : 'bg-[#F2F2F7] text-[#8E8E93]'
+                  ? 'text-white shadow-[0_4px_14px_rgba(108,99,255,0.35)]'
+                  : 'bg-[#F5F4FF] text-[#6B6889] border border-[#E8E6F5]'
               )}
+              style={active ? {
+                background: 'linear-gradient(135deg, #6C63FF 0%, #8B5CF6 100%)',
+              } : {}}
             >
               <Icon size={20} />
               {label}
@@ -170,23 +174,26 @@ const StockRow = /*#__PURE__*/ React.memo(function StockRow({
         'w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-left',
         'transition-all duration-200 active:scale-[0.98] select-none',
         selected
-          ? 'bg-[#E3F0FF] ring-1 ring-[#007AFF]/30'
-          : 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]'
+          ? 'bg-[#EEEDFF] border border-[#6C63FF]/30'
+          : 'bg-white border border-[#F0EEFF] shadow-[0_2px_8px_rgba(108,99,255,0.07)]'
       )}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-[17px] font-semibold text-[#1C1C1E] truncate">{item.brand}</p>
-        <p className="text-[15px] text-[#8E8E93] mt-0.5">
-          {[item.color, item.size ? `Size ${item.size}` : null].filter(Boolean).join(' · ') || '—'}
+        <p className="text-[16px] font-semibold text-[#1A1733] truncate">{item.brand}</p>
+        <p className="text-[14px] text-[#6B6889] mt-0.5 truncate">
+          {formatCount(item.qty)} in stock
         </p>
       </div>
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="text-right">
-          <p className="text-[17px] font-bold text-[#007AFF]">{formatRWF(item.sellPrice)}</p>
-          <p className="text-[12px] text-[#C7C7CC]">×{formatCount(item.qty)}</p>
+          <p className="text-[16px] font-bold text-[#6C63FF]">{formatRWF(item.sellPrice)}</p>
+          <p className="text-[12px] text-[#B0ADCA]">set price</p>
         </div>
         {selected && (
-          <div className="w-6 h-6 rounded-full bg-[#007AFF] flex items-center justify-center shrink-0">
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg, #6C63FF, #8B5CF6)' }}
+          >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M2 6l3 3 5-6"
@@ -206,8 +213,8 @@ const StockRow = /*#__PURE__*/ React.memo(function StockRow({
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-start gap-4">
-      <span className="text-[15px] text-[#8E8E93] shrink-0">{label}</span>
-      <span className="text-[15px] text-[#1C1C1E] text-right">{value || '—'}</span>
+      <span className="text-[14px] text-[#6B6889] shrink-0">{label}</span>
+      <span className="text-[14px] text-[#1A1733] text-right">{value || '—'}</span>
     </div>
   )
 }
@@ -216,6 +223,14 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 export default function SellPage() {
   const router = useRouter()
+  const session = useSession()
+  const isEmployer = useIsEmployer()
+
+  useEffect(() => {
+    if (session && !isEmployer && !session.canSell) {
+      router.replace('/dashboard')
+    }
+  }, [session, isEmployer, router])
 
   const { data, isLoading } = db.useQuery({ stockItems: {} })
   const allItems = (data?.stockItems ?? []) as StockItem[]
@@ -228,7 +243,7 @@ export default function SellPage() {
   const [search, setSearch] = useState('')
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null)
 
-  // Fields (manual entry populates brand/color/size/buyPrice; stock selection pre-fills all)
+  // Fields
   const [brand, setBrand] = useState('')
   const [color, setColor] = useState('')
   const [size, setSize] = useState('')
@@ -257,11 +272,7 @@ export default function SellPage() {
   const filteredItems = inStockItems.filter((item) => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
-    return (
-      item.brand.toLowerCase().includes(q) ||
-      (item.color?.toLowerCase().includes(q) ?? false) ||
-      (item.size?.toLowerCase().includes(q) ?? false)
-    )
+    return item.brand.toLowerCase().includes(q)
   })
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -269,8 +280,8 @@ export default function SellPage() {
   function handleSelectItem(item: StockItem) {
     setSelectedItem(item)
     setBrand(item.brand)
-    setColor(item.color ?? '')
-    setSize(item.size ?? '')
+    setColor('')
+    setSize('')
     setBuyPrice(String(item.buyPrice))
     setSellPrice(String(item.sellPrice))
     setQty(1)
@@ -331,6 +342,7 @@ export default function SellPage() {
         paymentMethod,
         date: new Date().toISOString(),
         ...(note.trim() ? { note: note.trim() } : {}),
+        ...(selectedItem ? { stockItemId: selectedItem.id } : {}),
       }
 
       const baseOps = [db.tx.sales[newSaleId].update(saleData)]
@@ -359,18 +371,18 @@ export default function SellPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7]">
+    <div className="min-h-screen page-content" style={{ background: 'var(--color-bg)' }}>
       {/* ── Success overlay ── */}
       {success && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}
+          style={{ background: 'rgba(26,23,51,0.6)', backdropFilter: 'blur(8px)' }}
         >
           <div className="flex flex-col items-center gap-4 bg-white rounded-3xl px-12 py-10 mx-6 shadow-2xl">
-            <div className="w-24 h-24 rounded-full bg-[#E3F9EA] flex items-center justify-center">
-              <CheckCircle2 size={48} className="text-[#34C759]" />
+            <div className="w-24 h-24 rounded-full bg-[#DFFBEF] flex items-center justify-center">
+              <CheckCircle2 size={48} className="text-[#00C26F]" />
             </div>
-            <p className="text-[22px] font-bold text-[#1C1C1E]">Sale Recorded!</p>
+            <p className="text-[22px] font-bold text-[#1A1733]">Sale Recorded!</p>
           </div>
         </div>
       )}
@@ -378,7 +390,9 @@ export default function SellPage() {
       {/* ── Header ── */}
       <PageHeader title="Sell" />
 
-      <div className="px-4 flex flex-col gap-4 pb-10">
+      <div className="px-4 lg:px-8 pb-4 flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
+        {/* Left column: mode selector + item picker */}
+        <div className="flex flex-col gap-4 lg:col-span-2">
         {/* ── Mode selector ── */}
         <SegmentedControl
           options={[
@@ -393,17 +407,17 @@ export default function SellPage() {
         {mode === 'stock' && (
           <div className="flex flex-col gap-3">
             {/* Search bar */}
-            <div className="flex items-center gap-2 bg-[#E5E5EA] rounded-[12px] px-3 h-9">
-              <Search size={15} className="text-[#8E8E93] shrink-0" />
+            <div className="flex items-center gap-2 bg-white border border-[#E8E6F5] rounded-[12px] px-3 h-10 shadow-[0_1px_4px_rgba(108,99,255,0.06)]">
+              <Search size={15} className="text-[#6B6889] shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search brand, color, size…"
-                className="flex-1 bg-transparent text-[15px] text-[#1C1C1E] placeholder:text-[#8E8E93] outline-none"
+                className="flex-1 bg-transparent text-[15px] text-[#1A1733] placeholder:text-[#B0ADCA] outline-none"
               />
               {search && (
                 <button onClick={() => setSearch('')} className="shrink-0 active:opacity-60">
-                  <X size={14} className="text-[#8E8E93]" />
+                  <X size={14} className="text-[#6B6889]" />
                 </button>
               )}
             </div>
@@ -416,11 +430,11 @@ export default function SellPage() {
                 ))}
               </div>
             ) : filteredItems.length === 0 ? (
-              <p className="text-center py-10 text-[15px] text-[#8E8E93]">
+              <p className="text-center py-10 text-[15px] text-[#6B6889]">
                 {search ? 'No items match your search' : 'No items in stock'}
               </p>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2">
                 {filteredItems.map((item) => (
                   <StockRow
                     key={item.id}
@@ -443,6 +457,44 @@ export default function SellPage() {
               onChange={(e) => setBrand(e.target.value)}
               placeholder="Nike, Adidas, Timberland…"
             />
+            <Input
+              label="Buy Price (RWF) — optional"
+              value={buyPrice}
+              onChange={(e) => setBuyPrice(e.target.value)}
+              type="number"
+              inputMode="numeric"
+              placeholder="0"
+            />
+          </div>
+        )}
+
+        </div>{/* end left column */}
+
+        {/* Right rail: sale form (sticky on desktop) */}
+        <div className="lg:col-span-1 lg:sticky lg:top-24 flex flex-col gap-4">
+        {/* ── Shared form ── */}
+        {formReady ? (
+          <>
+            {/* Section divider */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-[#E8E6F5]" />
+              <span className="text-[11px] font-bold text-[#6B6889] uppercase tracking-wider">
+                Sale Details
+              </span>
+              <div className="flex-1 h-px bg-[#E8E6F5]" />
+            </div>
+
+            {/* Sell Price */}
+            <Input
+              label="Sell Price (RWF)"
+              value={sellPrice}
+              onChange={(e) => setSellPrice(e.target.value)}
+              type="number"
+              inputMode="numeric"
+              placeholder="0"
+            />
+
+            {/* Color & Size — entered by the seller at sale time */}
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Color"
@@ -457,56 +509,27 @@ export default function SellPage() {
                 placeholder="42"
               />
             </div>
-            <Input
-              label="Buy Price (RWF) — optional"
-              value={buyPrice}
-              onChange={(e) => setBuyPrice(e.target.value)}
-              type="number"
-              inputMode="numeric"
-              placeholder="0"
-            />
-          </div>
-        )}
-
-        {/* ── Shared form (shown after stock selection or always in manual mode) ── */}
-        {formReady && (
-          <>
-            {/* Section divider */}
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-[#E5E5EA]" />
-              <span className="text-[12px] font-semibold text-[#8E8E93] uppercase tracking-wider">
-                Sale Details
-              </span>
-              <div className="flex-1 h-px bg-[#E5E5EA]" />
-            </div>
-
-            {/* Sell Price */}
-            <Input
-              label="Sell Price (RWF)"
-              value={sellPrice}
-              onChange={(e) => setSellPrice(e.target.value)}
-              type="number"
-              inputMode="numeric"
-              placeholder="0"
-            />
 
             {/* Qty stepper */}
             <QtyStep value={qty} onChange={setQty} max={maxQty} />
 
             {/* Total amount */}
-            <div className="bg-[#E3F0FF] rounded-2xl px-4 py-4 flex items-center justify-between">
-              <span className="text-[17px] font-semibold text-[#007AFF]">Total Amount</span>
-              <span className="text-[26px] font-bold text-[#007AFF] tabular-nums">
+            <div
+              className="rounded-2xl px-4 py-4 flex items-center justify-between"
+              style={{ background: 'linear-gradient(135deg, #6C63FF 0%, #8B5CF6 100%)' }}
+            >
+              <span className="text-[16px] font-semibold text-white/80">Total Amount</span>
+              <span className="text-[26px] font-extrabold text-white tabular-nums">
                 {formatRWF(totalAmount)}
               </span>
             </div>
 
-            {/* Amount paid + full payment shortcut */}
-            <div className="bg-white rounded-2xl px-4 pt-3 pb-4 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.04)]">
+            {/* Amount paid */}
+            <div className="bg-white rounded-2xl px-4 pt-3 pb-4 border border-[#F0EEFF] shadow-[0_2px_8px_rgba(108,99,255,0.07)]">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[15px] font-medium text-[#1C1C1E]">Amount Paid</label>
+                <label className="text-[14px] font-semibold text-[#1A1733]">Amount Paid</label>
                 <button
-                  className="text-[15px] font-semibold text-[#007AFF] active:opacity-50 transition-opacity"
+                  className="text-[14px] font-bold text-[#6C63FF] active:opacity-50 transition-opacity"
                   onClick={() => setAmountPaid(String(totalAmount))}
                 >
                   Full payment
@@ -518,15 +541,15 @@ export default function SellPage() {
                 onChange={(e) => setAmountPaid(e.target.value)}
                 inputMode="numeric"
                 placeholder="0"
-                className="w-full bg-transparent text-[20px] font-semibold text-[#1C1C1E] placeholder:text-[#C7C7CC] outline-none tabular-nums"
+                className="w-full bg-transparent text-[20px] font-semibold text-[#1A1733] placeholder:text-[#B0ADCA] outline-none tabular-nums"
               />
             </div>
 
             {/* Debt banner */}
             {hasDebt && (
-              <div className="bg-[#FFF4E3] rounded-2xl px-4 py-3.5">
-                <p className="text-[17px] font-bold text-[#FF9500]">Debt: {formatRWF(debt)}</p>
-                <p className="text-[13px] text-[#FF9500] mt-0.5">
+              <div className="bg-[#FFF4DB] border border-[#FFB020]/20 rounded-2xl px-4 py-3.5">
+                <p className="text-[16px] font-bold text-[#C07A10]">Debt: {formatRWF(debt)}</p>
+                <p className="text-[13px] text-[#C07A10] mt-0.5 opacity-80">
                   Customer will owe this amount
                 </p>
               </div>
@@ -535,7 +558,7 @@ export default function SellPage() {
             {/* Payment method */}
             <PaymentMethodPicker value={paymentMethod} onChange={setPaymentMethod} />
 
-            {/* Customer name — only required when there is a debt */}
+            {/* Customer name */}
             {hasDebt && (
               <Input
                 label="Customer Name"
@@ -553,9 +576,9 @@ export default function SellPage() {
               placeholder="Add a note…"
             />
 
-            {/* ── Sale summary preview ── */}
-            <Card className="bg-[#F9F9FB]">
-              <p className="text-[11px] font-semibold text-[#8E8E93] uppercase tracking-wider mb-3">
+            {/* Sale summary preview */}
+            <Card className="bg-[#F7F6FF]">
+              <p className="text-[11px] font-bold text-[#6B6889] uppercase tracking-wider mb-3">
                 Sale Summary
               </p>
               <div className="flex flex-col gap-2.5">
@@ -582,9 +605,9 @@ export default function SellPage() {
                   }
                 />
                 {hasDebt && (
-                  <div className="flex justify-between pt-0.5 border-t border-[#F2F2F7] mt-0.5">
-                    <span className="text-[15px] font-semibold text-[#FF9500]">Debt</span>
-                    <span className="text-[15px] font-bold text-[#FF9500]">{formatRWF(debt)}</span>
+                  <div className="flex justify-between pt-0.5 border-t border-[#E8E6F5] mt-0.5">
+                    <span className="text-[14px] font-semibold text-[#FFB020]">Debt</span>
+                    <span className="text-[14px] font-bold text-[#FFB020]">{formatRWF(debt)}</span>
                   </div>
                 )}
               </div>
@@ -592,7 +615,7 @@ export default function SellPage() {
 
             {/* Validation error */}
             {error && (
-              <p className="text-[15px] text-[#FF3B30] text-center font-medium">{error}</p>
+              <p className="text-[14px] text-[#FF3D5A] text-center font-medium">{error}</p>
             )}
 
             {/* Record Sale */}
@@ -606,7 +629,14 @@ export default function SellPage() {
               Record Sale
             </Button>
           </>
+        ) : (
+          <Card className="hidden lg:block">
+            <p className="text-center text-[15px] text-[#6B6889] py-8">
+              Select an item or switch to Manual Entry to start a sale.
+            </p>
+          </Card>
         )}
+        </div>{/* end right rail */}
       </div>
     </div>
   )
