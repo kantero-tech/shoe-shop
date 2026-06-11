@@ -12,7 +12,7 @@ interface Tab {
   href: string
   label: string
   employerOnly?: boolean
-  permKey?: 'canSell' | 'canViewStock' | 'canViewDebts'
+  permKey?: 'canSell' | 'canViewStock' | 'canViewDebts' | 'canReceiveStock'
   icon: (active: boolean) => React.ReactNode
 }
 
@@ -40,6 +40,19 @@ const MAIN_TABS: Tab[] = [
     ),
   },
   {
+    href: '/receive',
+    label: 'Receive',
+    permKey: 'canReceiveStock',
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#A5A0FF' : '#8B89B8'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 16h6M19 13v6" />
+        <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    ),
+  },
+  {
     href: '/sell',
     label: 'Sell',
     permKey: 'canSell',
@@ -58,16 +71,6 @@ const MAIN_TABS: Tab[] = [
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#A5A0FF' : '#8B89B8'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
         <line x1="1" y1="10" x2="23" y2="10" />
-      </svg>
-    ),
-  },
-  {
-    href: '/expenses',
-    label: 'Expenses',
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#A5A0FF' : '#8B89B8'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
   },
@@ -116,6 +119,20 @@ const MORE_ITEMS: MoreItem[] = [
         <line x1="12" y1="14" x2="12" y2="14" />
         <line x1="16" y1="14" x2="16" y2="18" />
         <line x1="8" y1="18" x2="12" y2="18" />
+      </svg>
+    ),
+  },
+  {
+    href: '/expenses',
+    label: 'Expenses',
+    description: 'View and add business expenses',
+    permKey: 'canViewExpenses',
+    color: '#CC1234',
+    bg: '#FFE5EB',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
   },

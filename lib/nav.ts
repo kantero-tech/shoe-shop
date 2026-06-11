@@ -1,6 +1,7 @@
 import {
   LayoutGrid,
   Package,
+  PackagePlus,
   Tag,
   ScrollText,
   CreditCard,
@@ -25,6 +26,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', Icon: LayoutGrid },
   { href: '/stock', label: 'Stock', Icon: Package, permKey: 'canViewStock' },
+  { href: '/receive', label: 'Receive Stock', Icon: PackagePlus, permKey: 'canReceiveStock' },
   { href: '/sell', label: 'Sell', Icon: Tag, permKey: 'canSell' },
   { href: '/sales', label: 'Sales', Icon: ScrollText, permKey: 'canViewSales' },
   { href: '/debts', label: 'Debts', Icon: CreditCard, permKey: 'canViewDebts' },
