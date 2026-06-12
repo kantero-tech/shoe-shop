@@ -9,6 +9,7 @@ import {
   BarChart3,
   Calculator,
   Users,
+  Settings,
   type LucideIcon,
 } from 'lucide-react'
 import type { Session } from './auth'
@@ -38,6 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
 /** Secondary destinations pinned to the sidebar footer. */
 export const FOOTER_NAV: NavItem[] = [
   { href: '/users', label: 'Team', Icon: Users, employerOnly: true },
+  { href: '/settings', label: 'Settings', Icon: Settings, employerOnly: true },
 ]
 
 export function isNavItemVisible(item: NavItem, isEmployer: boolean, session: Session | null): boolean {

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, ResponsiveContainer } from 'recharts'
-import { LogOut, ChevronRight, Users, AlertTriangle, Moon, Sun } from 'lucide-react'
+import { LogOut, ChevronRight, Users, Settings, AlertTriangle, Moon, Sun } from 'lucide-react'
 import { db } from '@/lib/db'
 import type { Sale, StockItem, Expense } from '@/lib/schema'
 import { DAILY_TARGET_SETTING_ID } from '@/lib/schema'
@@ -253,6 +253,16 @@ export default function DashboardPage() {
                 style={{ background: 'var(--color-fill)', borderColor: 'var(--color-border)' }}
               >
                 <Users size={17} style={{ color: 'var(--color-text-secondary)' }} />
+              </Link>
+            )}
+            {isEmployer && (
+              <Link
+                href="/settings"
+                aria-label="Settings"
+                className="w-10 h-10 rounded-full border flex items-center justify-center active:scale-90 transition-all"
+                style={{ background: 'var(--color-fill)', borderColor: 'var(--color-border)' }}
+              >
+                <Settings size={17} style={{ color: 'var(--color-text-secondary)' }} />
               </Link>
             )}
             <button
